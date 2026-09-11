@@ -21,7 +21,7 @@ export const DashboardScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col w-full gap-5">
-      {/* Net Balance Showcase Card */}
+      
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary-container to-primary p-5 sm:p-6 text-on-primary shadow-xl">
         <div className="absolute -right-8 -bottom-10 w-44 h-44 rounded-full bg-on-primary-container/15 blur-2xl pointer-events-none"></div>
         <div className="absolute -left-6 -top-6 w-32 h-32 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
