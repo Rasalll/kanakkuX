@@ -43,8 +43,9 @@ export const QuickAddModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const val = parseFloat(amount);
-    if (!val || isNaN(val) || val <= 0) {
+    const cleanAmount = amount.replace(/[^0-9.]/g, '');
+    const val = Math.abs(parseFloat(cleanAmount) || 0);
+    if (!val) {
       setErrorShake(true);
       setTimeout(() => setErrorShake(false), 800);
       return;
@@ -153,15 +154,15 @@ export const QuickAddModal: React.FC = () => {
           {/* Amount Input */}
           <div className="flex flex-col gap-1">
             <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-              {tab === 'lent' ? 'Loan Sum' : 'Transaction Sum'}
+              {tab === 'lent' ? 'Loan Amount' : 'Amount'}
             </label>
             <div className={`relative flex items-center transition-transform ${errorShake ? 'animate-bounce text-error' : ''}`}>
               <span className="absolute left-4 font-headline-md text-headline-md text-primary font-bold">
                 {currency}
               </span>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}

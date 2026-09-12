@@ -110,10 +110,10 @@ export const ExpensesScreen: React.FC = () => {
     return groups.sort((a, b) => b.date.localeCompare(a.date));
   }, [filteredExpenses]);
 
-  // Submit Handler
   const handleSaveExpense = () => {
-    const amt = parseFloat(amountInput);
-    if (!amt || isNaN(amt) || amt <= 0) {
+    const cleanAmount = amountInput.replace(/[^0-9.]/g, '');
+    const amt = Math.abs(parseFloat(cleanAmount) || 0);
+    if (!amt) {
       alert('Please enter a valid expense amount.');
       return;
     }
@@ -470,8 +470,7 @@ export const ExpensesScreen: React.FC = () => {
                 className="w-48 bg-transparent text-center font-metric-xl-mobile text-metric-xl-mobile text-on-surface focus:outline-none placeholder:text-on-surface-variant/30 font-bold"
                 inputMode="decimal"
                 placeholder="0.00"
-                step="0.01"
-                type="number"
+                type="text"
                 value={amountInput}
                 onChange={e => setAmountInput(e.target.value)}
                 autoFocus
@@ -644,7 +643,7 @@ export const ExpensesScreen: React.FC = () => {
 
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <span className="font-label-lg text-label-lg text-error font-bold tracking-tight mr-1">
-                          -{currency}{exp.amount.toFixed(2)}
+                          {currency}{exp.amount.toFixed(2)}
                         </span>
 
                         <button

@@ -1,3 +1,9 @@
+'use client';
+
+import dynamic from 'next/dynamic';
+
+const App = dynamic(() => import('@/src/App'), { ssr: false });
+
 export default function DashboardPage() {
-  return <div className="p-4 text-tx">Dashboard — coming in Phase 7</div>;
+  return <App />;
 }

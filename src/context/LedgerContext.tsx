@@ -69,41 +69,60 @@ interface LedgerContextType {
 
 const LedgerContext = createContext<LedgerContextType | undefined>(undefined);
 
-const MONTHS_LIST = [
-  'August 2024',
-  'September 2024',
-  'October 2024',
-  'November 2024',
-  'December 2024',
-];
+// Generate a rolling 24-month list ending at the current month
+function buildMonthsList(): string[] {
+  const months: string[] = [];
+  const now = new Date();
+  for (let i = 23; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.toLocaleString('en-US', { month: 'long', year: 'numeric' }));
+  }
+  return months;
+}
+
+const MONTHS_LIST = buildMonthsList();
 
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   
-  // Storage initialization
+  // Storage initialization - migrate away from legacy lf_* dummy cache
   const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
-    const saved = localStorage.getItem('lf_expenses');
-    return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
+    if (typeof window !== 'undefined') {
+      // Clear legacy dummy cache if present
+      ['lf_expenses', 'lf_incomes', 'lf_loans', 'lf_custom_cats'].forEach(k => localStorage.removeItem(k));
+      const saved = localStorage.getItem('kanakku_expenses');
+      return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
+    }
+    return INITIAL_EXPENSES;
   });
 
   const [incomes, setIncomes] = useState<IncomeItem[]>(() => {
-    const saved = localStorage.getItem('lf_incomes');
-    return saved ? JSON.parse(saved) : INITIAL_INCOMES;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kanakku_incomes');
+      return saved ? JSON.parse(saved) : INITIAL_INCOMES;
+    }
+    return INITIAL_INCOMES;
   });
 
   const [loans, setLoans] = useState<LoanItem[]>(() => {
-    const saved = localStorage.getItem('lf_loans');
-    return saved ? JSON.parse(saved) : INITIAL_LOANS;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kanakku_loans');
+      return saved ? JSON.parse(saved) : INITIAL_LOANS;
+    }
+    return INITIAL_LOANS;
   });
 
   const [customCategories, setCustomCategories] = useState<string[]>(() => {
-    const saved = localStorage.getItem('lf_custom_cats');
-    return saved ? JSON.parse(saved) : [];
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kanakku_custom_cats');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
   });
 
-  const [currentMonthIndex, setCurrentMonthIndex] = useState<number>(2); // October 2024
+  const [currentMonthIndex, setCurrentMonthIndex] = useState<number>(MONTHS_LIST.length - 1); // Current month
   const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(false);
-  const [currency, setCurrency] = useState<string>('$');
+  const [currency, setCurrency] = useState<string>('₹');
 
   // Modals
   const [quickAddModalOpen, setQuickAddModalOpen] = useState(false);
@@ -115,19 +134,19 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Sync with LocalStorage
   useEffect(() => {
-    localStorage.setItem('lf_expenses', JSON.stringify(expenses));
+    localStorage.setItem('kanakku_expenses', JSON.stringify(expenses));
   }, [expenses]);
 
   useEffect(() => {
-    localStorage.setItem('lf_incomes', JSON.stringify(incomes));
+    localStorage.setItem('kanakku_incomes', JSON.stringify(incomes));
   }, [incomes]);
 
   useEffect(() => {
-    localStorage.setItem('lf_loans', JSON.stringify(loans));
+    localStorage.setItem('kanakku_loans', JSON.stringify(loans));
   }, [loans]);
 
   useEffect(() => {
-    localStorage.setItem('lf_custom_cats', JSON.stringify(customCategories));
+    localStorage.setItem('kanakku_custom_cats', JSON.stringify(customCategories));
   }, [customCategories]);
 
   const showToast = (msg: string) => {
@@ -171,8 +190,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return Math.max(0, totalMonthlyIncome - totalMonthlySpend);
   }, [totalMonthlyIncome, totalMonthlySpend]);
 
-  const burnCap = 3600;
-  const burnConsumedPercent = Math.min(100, (totalMonthlySpend / burnCap) * 100);
+  const burnCap = 30000;
+  const burnConsumedPercent = burnCap > 0 ? Math.min(100, (totalMonthlySpend / burnCap) * 100) : 0;
   const burnCushionLeft = Math.max(0, burnCap - totalMonthlySpend);
 
   const categoryBreakdown = useMemo(() => {

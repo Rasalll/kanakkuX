@@ -17,7 +17,90 @@ export const DashboardScreen: React.FC = () => {
     openReportModal,
     setActiveTab,
     currency,
+    expenses,
+    incomes,
+    loans,
   } = useLedger();
+
+  const totalTransactionsCount = expenses.length + incomes.length + loans.length;
+
+  const recentActivities = React.useMemo(() => {
+    const list: Array<{
+      id: string;
+      type: 'expense' | 'income' | 'loan';
+      title: string;
+      subtitle: string;
+      date: string;
+      amount: number;
+      badgeText: string;
+      icon: string;
+      iconBg: string;
+      iconColor: string;
+      amountColor: string;
+      prefix: string;
+      onClick: () => void;
+    }> = [];
+
+    expenses.forEach(e => {
+      list.push({
+        id: e.id,
+        type: 'expense',
+        title: e.note || e.category,
+        subtitle: e.category,
+        date: e.date,
+        amount: e.amount,
+        badgeText: e.paymentMethod,
+        icon: e.category.toLowerCase().includes('food')
+          ? 'restaurant'
+          : e.category.toLowerCase().includes('commute') || e.category.toLowerCase().includes('travel')
+          ? 'directions_subway'
+          : 'shopping_cart',
+        iconBg: 'bg-primary-fixed/40',
+        iconColor: 'text-primary',
+        amountColor: 'text-on-surface',
+        prefix: '',
+        onClick: () => setActiveTab('expenses'),
+      });
+    });
+
+    incomes.forEach(inc => {
+      list.push({
+        id: inc.id,
+        type: 'income',
+        title: inc.source,
+        subtitle: inc.note || 'Income',
+        date: inc.date,
+        amount: inc.amount,
+        badgeText: inc.destination,
+        icon: 'trending_up',
+        iconBg: 'bg-primary-fixed',
+        iconColor: 'text-primary',
+        amountColor: 'text-primary',
+        prefix: '',
+        onClick: () => setActiveTab('income'),
+      });
+    });
+
+    loans.forEach(l => {
+      list.push({
+        id: l.id,
+        type: 'loan',
+        title: `Lent: ${l.personName}`,
+        subtitle: l.status === 'settled' ? 'Settled' : `${currency}${l.remaining.toLocaleString('en-IN')} remaining`,
+        date: l.dateLent,
+        amount: l.amountLent,
+        badgeText: l.status === 'settled' ? 'Settled' : 'Pending',
+        icon: 'volunteer_activism',
+        iconBg: 'bg-tertiary-fixed',
+        iconColor: 'text-on-tertiary-fixed',
+        amountColor: 'text-tertiary',
+        prefix: '',
+        onClick: () => setActiveTab('owed'),
+      });
+    });
+
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+  }, [expenses, incomes, loans, currency, setActiveTab]);
 
   return (
     <div className="flex flex-col w-full gap-5">
@@ -48,16 +131,16 @@ export const DashboardScreen: React.FC = () => {
             <span className="font-display-lg-mobile text-display-lg-mobile md:text-4xl tracking-tight drop-shadow-sm font-headline-lg font-bold">
               {isBalanceHidden
                 ? '••••••••'
-                : `${currency}${netLiquidBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                : `${currency}${netLiquidBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </span>
-            <span className="font-label-sm text-label-sm text-on-primary-container/80 font-medium">USD</span>
+            <span className="font-label-sm text-label-sm text-on-primary-container/80 font-medium">INR</span>
           </div>
 
           <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
             <div className="inline-flex items-center gap-1 bg-surface-container-lowest/15 px-2.5 py-1 rounded-full backdrop-blur-md">
-              <span className="material-symbols-outlined text-[14px] text-on-primary-container">arrow_outward</span>
-              <span className="font-label-sm text-label-sm font-semibold text-on-primary-container">+12.4%</span>
-              <span className="font-body-sm text-body-sm text-on-primary/75 ml-0.5">vs last month</span>
+              <span className="material-symbols-outlined text-[14px] text-on-primary-container">info</span>
+              <span className="font-label-sm text-label-sm font-semibold text-on-primary-container">Real-time</span>
+              <span className="font-body-sm text-body-sm text-on-primary/75 ml-0.5">balance</span>
             </div>
             <div className="flex items-center gap-1 text-on-primary-container/80">
               <span className="w-2 h-2 rounded-full bg-primary-fixed animate-pulse"></span>
@@ -82,10 +165,10 @@ export const DashboardScreen: React.FC = () => {
           </div>
           <div>
             <p className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              +{currency}{totalMonthlyIncome.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              {currency}{totalMonthlyIncome.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               <span className="text-body-sm text-on-surface-variant font-normal">.00</span>
             </p>
-            <p className="font-label-sm text-label-sm text-primary mt-0.5 font-medium">+18% this month</p>
+            <p className="font-label-sm text-label-sm text-primary mt-0.5 font-medium">This month</p>
           </div>
         </div>
 
@@ -102,7 +185,7 @@ export const DashboardScreen: React.FC = () => {
           </div>
           <div>
             <p className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              -{currency}{totalMonthlySpend.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              {currency}{totalMonthlySpend.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               <span className="text-body-sm text-on-surface-variant font-normal">.00</span>
             </p>
             <p className="font-label-sm text-label-sm text-error mt-0.5 font-medium">
@@ -128,7 +211,7 @@ export const DashboardScreen: React.FC = () => {
                 </span>
               </div>
               <p className="font-headline-sm text-headline-sm text-on-surface font-bold mt-0.5">
-                {currency}{totalAmountOwed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {currency}{totalAmountOwed.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
           </div>
@@ -201,7 +284,7 @@ export const DashboardScreen: React.FC = () => {
             <span className="font-label-md text-label-md text-on-surface font-semibold">Monthly Burn Rate</span>
           </div>
           <span className="font-label-md text-label-md text-on-surface-variant font-bold">
-            {currency}{totalMonthlySpend.toLocaleString('en-US', { minimumFractionDigits: 0 })} / {currency}{burnCap.toLocaleString('en-US')}
+            {currency}{totalMonthlySpend.toLocaleString('en-IN', { minimumFractionDigits: 0 })} / {currency}{burnCap.toLocaleString('en-IN')}
           </span>
         </div>
         
@@ -216,7 +299,7 @@ export const DashboardScreen: React.FC = () => {
         <div className="flex items-center justify-between text-on-surface-variant text-label-sm">
           <span>{burnConsumedPercent.toFixed(1)}% consumed</span>
           <span className="text-primary font-semibold">
-            {currency}{burnCushionLeft.toLocaleString('en-US', { minimumFractionDigits: 0 })} cushion left (11 days)
+            {currency}{burnCushionLeft.toLocaleString('en-IN', { minimumFractionDigits: 0 })} cushion left
           </span>
         </div>
       </section>
@@ -233,137 +316,60 @@ export const DashboardScreen: React.FC = () => {
             className="font-label-md text-label-md text-primary font-semibold hover:underline min-h-[40px] inline-flex items-center"
             type="button"
           >
-            See All (48)
+            See All ({totalTransactionsCount})
           </button>
         </div>
 
         <div className="flex flex-col gap-2">
-          {/* Item 1: Groceries */}
-          <article 
-            onClick={() => setActiveTab('expenses')}
-            className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest shadow-xs border border-surface-container/40 hover:bg-surface-container-low transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-primary-fixed/40 text-primary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
+          {recentActivities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 rounded-2xl bg-surface-container-lowest border border-surface-container/40 text-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+                <span className="material-symbols-outlined text-[24px]">receipt_long</span>
               </div>
-              <div className="flex flex-col min-w-0">
-                <p className="font-label-lg text-label-lg text-on-surface truncate font-semibold">
-                  Grocery & Supermarket
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="bg-surface-container text-on-surface-variant font-label-sm text-label-sm px-1.5 py-0.5 rounded">UPI</span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">Today, 14:20</span>
+              <p className="font-label-lg text-on-surface font-semibold">No recent activity</p>
+              <p className="font-body-sm text-on-surface-variant max-w-xs">
+                Use Quick Dispatch above to record your first expense, income, or loan.
+              </p>
+            </div>
+          ) : (
+            recentActivities.map(item => (
+              <article 
+                key={item.id}
+                onClick={item.onClick}
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest shadow-xs border border-surface-container/40 hover:bg-surface-container-low transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-11 h-11 rounded-full ${item.iconBg} ${item.iconColor} flex items-center justify-center shrink-0`}>
+                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <p className="font-label-lg text-label-lg text-on-surface truncate font-semibold">
+                      {item.title}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="bg-surface-container text-on-surface-variant font-label-sm text-label-sm px-1.5 py-0.5 rounded">
+                        {item.badgeText}
+                      </span>
+                      <span className="font-body-sm text-body-sm text-on-surface-variant">
+                        {item.date}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-end shrink-0 pl-2">
-              <span className="font-headline-sm text-headline-sm font-bold text-on-surface">-$74.50</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">Food & Living</span>
-            </div>
-          </article>
-
-          {/* Item 2: Freelance UI */}
-          <article 
-            onClick={() => setActiveTab('income')}
-            className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest shadow-xs border border-surface-container/40 hover:bg-surface-container-low transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-primary-fixed text-primary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[20px]">design_services</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <p className="font-label-lg text-label-lg text-on-surface truncate font-semibold">
-                  Freelance UI Design
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="bg-surface-container text-on-surface-variant font-label-sm text-label-sm px-1.5 py-0.5 rounded">Bank Transfer</span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">Yesterday</span>
+                <div className="flex flex-col items-end shrink-0 pl-2">
+                  <span className={`font-headline-sm text-headline-sm font-bold ${item.amountColor}`}>
+                    {item.prefix}{currency}{item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">
+                    {item.subtitle}
+                  </span>
                 </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-end shrink-0 pl-2">
-              <span className="font-headline-sm text-headline-sm font-bold text-primary">+$1,200.00</span>
-              <span className="font-label-sm text-label-sm text-primary font-medium">Retainer</span>
-            </div>
-          </article>
-
-          {/* Item 3: Lent to Rahul */}
-          <article 
-            onClick={() => setActiveTab('owed')}
-            className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest shadow-xs border border-surface-container/40 hover:bg-surface-container-low transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[20px]">send_money</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <p className="font-label-lg text-label-lg text-on-surface truncate font-semibold">
-                  Lent: Rahul Sharma
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="bg-tertiary-fixed-dim/40 text-tertiary font-label-sm text-label-sm px-1.5 py-0.5 rounded font-bold">● Pending</span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">2 days ago</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-end shrink-0 pl-2">
-              <span className="font-headline-sm text-headline-sm font-bold text-tertiary">-$300.00</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">Settlement due</span>
-            </div>
-          </article>
-
-          {/* Item 4: Metro Card */}
-          <article 
-            onClick={() => setActiveTab('expenses')}
-            className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest shadow-xs border border-surface-container/40 hover:bg-surface-container-low transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[20px]">subway</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <p className="font-label-lg text-label-lg text-on-surface truncate font-semibold">
-                  Metro Transport Auto-Reload
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="bg-surface-container text-on-surface-variant font-label-sm text-label-sm px-1.5 py-0.5 rounded">Card •• 8912</span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">3 days ago</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-end shrink-0 pl-2">
-              <span className="font-headline-sm text-headline-sm font-bold text-on-surface">-$25.00</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">Commute</span>
-            </div>
-          </article>
-
-          {/* Item 5: Repayment */}
-          <article 
-            onClick={() => setActiveTab('owed')}
-            className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest shadow-xs border border-surface-container/40 hover:bg-surface-container-low transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-secondary-container/20 text-secondary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[20px]">pie_chart</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <p className="font-label-lg text-label-lg text-on-surface truncate font-semibold">
-                  Repayment: Priya V.
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm px-1.5 py-0.5 rounded font-bold">◐ $150 of $400</span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">UPI</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-end shrink-0 pl-2">
-              <span className="font-headline-sm text-headline-sm font-bold text-primary">+$150.00</span>
-              <span className="font-label-sm text-label-sm text-error font-medium">$250 balance</span>
-            </div>
-          </article>
+              </article>
+            ))
+          )}
         </div>
       </section>
     </div>
   );
 };
+

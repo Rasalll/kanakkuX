@@ -74,8 +74,9 @@ export const IncomeScreen: React.FC = () => {
   }, [filteredIncomes]);
 
   const handleSaveIncome = () => {
-    const val = parseFloat(amountInput);
-    if (!val || isNaN(val) || val <= 0) {
+    const cleanAmount = amountInput.replace(/[^0-9.]/g, '');
+    const val = Math.abs(parseFloat(cleanAmount) || 0);
+    if (!val) {
       alert('Please enter a valid inflow amount.');
       return;
     }
@@ -300,9 +301,8 @@ export const IncomeScreen: React.FC = () => {
                 <input
                   className="w-full h-12 pl-20 pr-4 rounded-xl bg-surface-container-low font-headline-md text-headline-md text-on-surface placeholder:text-outline/40 focus:bg-surface-container-lowest focus:outline-none border border-transparent focus:border-primary/40 transition-colors font-bold"
                   placeholder="0.00"
-                  required
-                  step="0.01"
-                  type="number"
+                  inputMode="decimal"
+                  type="text"
                   value={amountInput}
                   onChange={e => setAmountInput(e.target.value)}
                 />
@@ -503,7 +503,7 @@ export const IncomeScreen: React.FC = () => {
 
                   <div className="flex flex-col items-end shrink-0 pl-2">
                     <span className="font-label-lg text-label-lg font-bold text-primary">
-                      +{currency}{record.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      {currency}{record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
                     <div className="flex items-center gap-1 mt-1">
                       <button
@@ -570,7 +570,7 @@ export const IncomeScreen: React.FC = () => {
 
                   <div className="flex flex-col items-end shrink-0 pl-2">
                     <span className="font-label-lg text-label-lg font-bold text-primary">
-                      +{currency}{record.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      {currency}{record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
                     <div className="flex items-center gap-1 mt-1">
                       <button
