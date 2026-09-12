@@ -1,44 +1,42 @@
+'use client';
+
 import React, { useState } from 'react';
-import { APP_LOGO_URL } from '../data/initialData';
 import { useLedger } from '../context/LedgerContext';
-import { TabType } from '../types';
 
 export const Header: React.FC = () => {
-  const { 
-    activeTab, 
-    setActiveTab, 
-    currentMonth, 
-    prevMonth, 
-    nextMonth, 
-    currency, 
-    setCurrency, 
+  const {
+    activeTab,
+    setActiveTab,
+    currentMonth,
+    prevMonth,
+    nextMonth,
+    currency,
+    setCurrency,
+    openReportModal,
     showToast,
-    openReportModal 
   } = useLedger();
 
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   return (
-    <header className="sticky top-0 w-full z-40 bg-surface/90 backdrop-blur-xl border-b border-surface-container/60 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
-      <div className="max-w-6xl mx-auto h-16 px-4 md:px-8 flex items-center justify-between">
-        {/* Brand */}
-        <div 
-          className="flex items-center gap-2 cursor-pointer select-none group"
-          onClick={() => setActiveTab('dashboard')}
-        >
-          <img
-            alt="LedgerFlow App Logo"
-            className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
-            src={APP_LOGO_URL}
-          />
-          <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">
-            LedgerFlow
-          </span>
+    <header className="sticky top-0 z-30 w-full bg-surface/90 backdrop-blur-md border-b border-surface-container/60 transition-colors">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-xs">
+            <span className="material-symbols-outlined text-on-primary text-[20px]">account_balance_wallet</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface leading-tight">
+              kanakkuX
+            </span>
+            <span className="font-label-sm text-outline text-[11px] leading-tight">
+              Cloud Expense Tracker
+            </span>
+          </div>
         </div>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 bg-surface-container-low/80 p-1 rounded-full border border-surface-container">
+        <nav className="hidden md:flex items-center gap-1 bg-surface-container-low p-1 rounded-full border border-surface-container/60">
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`px-4 py-1.5 rounded-full font-label-md transition-all flex items-center gap-1.5 ${
@@ -47,7 +45,7 @@ export const Header: React.FC = () => {
                 : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">dashboard</span>
+            <span className="material-symbols-outlined text-[18px]">grid_view</span>
             <span>Dashboard</span>
           </button>
           <button
@@ -85,9 +83,7 @@ export const Header: React.FC = () => {
           </button>
         </nav>
 
-        {/* Right Header Actions */}
         <div className="flex items-center gap-2 relative">
-          {/* Calendar Month Selector Quick Button */}
           <div className="relative">
             <button
               onClick={() => setShowMonthDropdown(!showMonthDropdown)}
@@ -98,7 +94,6 @@ export const Header: React.FC = () => {
               <span className="material-symbols-outlined text-[20px]">calendar_today</span>
             </button>
 
-            {/* Quick Month Dropdown */}
             {showMonthDropdown && (
               <div className="absolute right-0 mt-2 w-56 bg-surface-container-lowest rounded-xl p-2 shadow-xl border border-surface-container z-50 animate-in fade-in zoom-in-95">
                 <div className="flex items-center justify-between px-2 py-1.5 border-b border-surface-container mb-1">
@@ -126,7 +121,6 @@ export const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Currency Toggle on Desktop / Tablet */}
           <button
             onClick={() => {
               const nextCurr = currency === '$' ? '₹' : '$';
@@ -140,7 +134,6 @@ export const Header: React.FC = () => {
             {currency}
           </button>
 
-          {/* User Profile Pill */}
           <div className="relative">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -151,16 +144,15 @@ export const Header: React.FC = () => {
               <span className="material-symbols-outlined text-on-primary text-[19px]">person</span>
             </button>
 
-            {/* Profile Dropdown */}
             {showProfileMenu && (
               <div className="absolute right-0 mt-2 w-64 bg-surface-container-lowest rounded-xl p-3 shadow-xl border border-surface-container z-50 animate-in fade-in zoom-in-95">
                 <div className="flex items-center gap-2.5 pb-2.5 border-b border-surface-container">
                   <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold">
-                    LF
+                    KX
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-label-md text-on-surface font-bold truncate">Alex Morgan</span>
-                    <span className="font-body-sm text-outline text-[11px] truncate">alex.morgan@fintech.io</span>
+                    <span className="font-label-md text-on-surface font-bold truncate">User</span>
+                    <span className="font-body-sm text-outline text-[11px] truncate">Synced to Supabase</span>
                   </div>
                 </div>
 
@@ -189,16 +181,6 @@ export const Header: React.FC = () => {
                       <span>Currency</span>
                     </div>
                     <span className="font-bold text-primary">{currency}</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      localStorage.clear();
-                      window.location.reload();
-                    }}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-error hover:bg-error-container/30 font-label-md text-left transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">restart_alt</span>
-                    <span>Reset Demo Data</span>
                   </button>
                 </div>
               </div>

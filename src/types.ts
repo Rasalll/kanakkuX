@@ -6,8 +6,11 @@ export interface ExpenseItem {
   note?: string;
   amount: number;
   category: 'Food' | 'Transport' | 'Shopping' | 'Bills' | 'Entertainment' | 'Health' | 'Subs' | string;
-  paymentMethod: 'UPI' | 'Card' | 'Cash' | 'Bank' | 'Other' | string;
-  date: string; // YYYY-MM-DD
+  categoryId?: string;
+  source?: string;
+  sourceId?: string | null;
+  paymentMethod: 'UPI' | 'Card' | 'Cash' | 'Bank' | 'Bank Transfer' | 'Other' | string;
+  date: string;
   createdAt: number;
 }
 
@@ -17,8 +20,9 @@ export interface IncomeItem {
   note?: string;
   amount: number;
   source: 'Salary' | 'Freelance' | 'Investments' | 'Rental' | 'Refund' | 'Bonus' | 'Other' | string;
+  sourceId?: string | null;
   destination: 'Bank Transfer' | 'UPI' | 'Card' | 'Cash' | 'Other' | string;
-  date: string; // YYYY-MM-DD
+  date: string;
   createdAt: number;
 }
 

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import { useLedger } from '../context/LedgerContext';
 import { IncomeItem } from '../types';
@@ -13,9 +15,10 @@ export const IncomeScreen: React.FC = () => {
     incomeSourceBreakdown,
     currency,
     setCurrency,
+    sourcesList,
+    addCustomSource,
   } = useLedger();
 
-  // Collapsible Form State
   const [isFormOpen, setIsFormOpen] = useState(true);
   const [amountInput, setAmountInput] = useState('');
   const [selectedSource, setSelectedSource] = useState('Salary');
@@ -24,14 +27,18 @@ export const IncomeScreen: React.FC = () => {
   const [memoInput, setMemoInput] = useState('');
   const [editingIncomeId, setEditingIncomeId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAddSource, setShowAddSource] = useState(false);
+  const [newSourceName, setNewSourceName] = useState('');
 
-  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [selectedFilterSource, setSelectedFilterSource] = useState<string>('all');
   const [incomeToDelete, setIncomeToDelete] = useState<IncomeItem | null>(null);
 
-  // Filtered & Searched Incomes
+  const availableSources = useMemo(() => {
+    return Array.from(new Set(['Salary', 'Freelance', 'Investments', 'Rental', 'Refund', 'Bonus', 'Other', ...sourcesList]));
+  }, [sourcesList]);
+
   const filteredIncomes = useMemo(() => {
     let result = incomes.filter(inc => {
       const q = searchQuery.toLowerCase();
@@ -57,13 +64,16 @@ export const IncomeScreen: React.FC = () => {
     return result;
   }, [incomes, searchQuery, selectedFilterSource, sortOrder]);
 
-  // Group into 'This Week' and 'Earlier in Cycle'
   const groupedIncomes = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    const sevenDaysAgo = d.toISOString().split('T')[0];
+
     const thisWeek: IncomeItem[] = [];
     const earlier: IncomeItem[] = [];
 
     filteredIncomes.forEach(inc => {
-      if (inc.date >= '2024-10-20') {
+      if (inc.date >= sevenDaysAgo) {
         thisWeek.push(inc);
       } else {
         earlier.push(inc);
@@ -73,7 +83,7 @@ export const IncomeScreen: React.FC = () => {
     return { thisWeek, earlier };
   }, [filteredIncomes]);
 
-  const handleSaveIncome = () => {
+  const handleSaveIncome = async () => {
     const cleanAmount = amountInput.replace(/[^0-9.]/g, '');
     const val = Math.abs(parseFloat(cleanAmount) || 0);
     if (!val) {
@@ -82,9 +92,9 @@ export const IncomeScreen: React.FC = () => {
     }
 
     setIsSaving(true);
-    setTimeout(() => {
+    try {
       if (editingIncomeId) {
-        editIncome(editingIncomeId, {
+        await editIncome(editingIncomeId, {
           title: memoInput.trim() || `${selectedSource} Inflow`,
           amount: val,
           source: selectedSource,
@@ -94,7 +104,7 @@ export const IncomeScreen: React.FC = () => {
         });
         setEditingIncomeId(null);
       } else {
-        addIncome({
+        await addIncome({
           title: memoInput.trim() || `${selectedSource} Inflow`,
           amount: val,
           source: selectedSource,
@@ -106,8 +116,17 @@ export const IncomeScreen: React.FC = () => {
 
       setAmountInput('');
       setMemoInput('');
+    } finally {
       setIsSaving(false);
-    }, 400);
+    }
+  };
+
+  const handleCreateSource = async () => {
+    if (!newSourceName.trim()) return;
+    await addCustomSource(newSourceName.trim());
+    setSelectedSource(newSourceName.trim());
+    setNewSourceName('');
+    setShowAddSource(false);
   };
 
   const startEdit = (inc: IncomeItem) => {
@@ -140,7 +159,6 @@ export const IncomeScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col w-full gap-4">
-      {/* Top Income Summary Hero Card */}
       <section className="relative overflow-hidden rounded-2xl bg-primary-container text-on-primary p-4 sm:p-5 shadow-lg shadow-primary-container/20">
         <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-primary/30 rounded-full blur-2xl pointer-events-none"></div>
         <div className="absolute top-2 right-3 opacity-15">
@@ -165,70 +183,54 @@ export const IncomeScreen: React.FC = () => {
               +{currency}
             </span>
             <h1 className="font-metric-xl-mobile text-metric-xl-mobile md:text-4xl font-bold tracking-tight text-on-primary">
-              {totalMonthlyIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {totalMonthlyIncome.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h1>
           </div>
-
-          <div className="pt-1 flex items-center justify-between font-body-sm text-body-sm text-on-primary-container">
-            <div className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px] text-on-primary">arrow_upward</span>
-              <span className="font-bold text-on-primary">+14.2%</span>
-              <span>vs 3-mo avg ({currency}6,305.00)</span>
-            </div>
-            <button
-              className="flex items-center justify-center w-7 h-7 rounded-full bg-on-primary-container/20 text-on-primary active:scale-95 transition-transform"
-              title="Income Trends"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[16px]">insights</span>
-            </button>
-          </div>
         </div>
       </section>
 
-      {/* Income Source Breakdown */}
-      <section className="rounded-2xl bg-surface-container-lowest p-4 sm:p-5 shadow-xs border border-surface-container/60">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[20px]">pie_chart</span>
-            <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">Income Inflow Mix</h2>
+      {incomeSourceBreakdown.length > 0 && (
+        <section className="rounded-2xl bg-surface-container-lowest p-4 sm:p-5 shadow-xs border border-surface-container/60">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px]">pie_chart</span>
+              <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">Income Inflow Mix</h2>
+            </div>
+            <span className="font-label-md text-label-md text-primary font-bold">
+              {incomeSourceBreakdown.length} Sources
+            </span>
           </div>
-          <span className="font-label-md text-label-md text-primary font-bold">
-            {incomeSourceBreakdown.length} Sources
-          </span>
-        </div>
 
-        {/* Mini Progress Bars */}
-        <div className="w-full flex h-2.5 rounded-full overflow-hidden bg-surface-container-high mb-3 gap-0.5">
-          {incomeSourceBreakdown.map((item, idx) => (
-            <div
-              key={idx}
-              className={`h-full ${item.colorClass} transition-all duration-500`}
-              style={{ width: `${Math.max(8, item.percent)}%` }}
-              title={`${item.source}: ${currency}${item.amount}`}
-            />
-          ))}
-        </div>
+          <div className="w-full flex h-2.5 rounded-full overflow-hidden bg-surface-container-high mb-3 gap-0.5">
+            {incomeSourceBreakdown.map((item, idx) => (
+              <div
+                key={idx}
+                className={`h-full ${item.colorClass} transition-all duration-500`}
+                style={{ width: `${Math.max(8, item.percent)}%` }}
+                title={`${item.source}: ${currency}${item.amount}`}
+              />
+            ))}
+          </div>
 
-        <div className="grid grid-cols-3 gap-2 pt-1">
-          {incomeSourceBreakdown.map((item, idx) => (
-            <div key={idx} className="flex flex-col">
-              <div className="flex items-center gap-1 mb-0.5">
-                <span className={`w-2 h-2 rounded-full ${item.colorClass}`}></span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant truncate font-medium">
-                  {item.source}
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            {incomeSourceBreakdown.map((item, idx) => (
+              <div key={idx} className="flex flex-col">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className={`w-2 h-2 rounded-full ${item.colorClass}`}></span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant truncate font-medium">
+                    {item.source}
+                  </span>
+                </div>
+                <span className="font-label-lg text-label-lg font-bold text-on-surface">
+                  {currency}{item.amount.toLocaleString()}
                 </span>
+                <span className="font-body-sm text-body-sm text-outline text-[11px]">{item.percent}%</span>
               </div>
-              <span className="font-label-lg text-label-lg font-bold text-on-surface">
-                {currency}{item.amount.toLocaleString()}
-              </span>
-              <span className="font-body-sm text-body-sm text-outline text-[11px]">{item.percent}%</span>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Add Income Interactive Collapsible Card */}
       <section className="rounded-2xl bg-surface-container-lowest p-4 sm:p-5 shadow-xs border border-surface-container/60 transition-all duration-300">
         <div
           className="flex items-center justify-between cursor-pointer select-none"
@@ -245,7 +247,7 @@ export const IncomeScreen: React.FC = () => {
                 {editingIncomeId ? 'Edit Income Entry' : 'Record Fresh Income'}
               </h3>
               <p className="font-body-sm text-body-sm text-on-surface-variant">
-                Log paychecks, client milestones & dividends
+                Log salary, client milestones and investments
               </p>
             </div>
           </div>
@@ -259,7 +261,6 @@ export const IncomeScreen: React.FC = () => {
           </button>
         </div>
 
-        {/* Collapsible Form Contents */}
         {isFormOpen && (
           <form
             className="flex flex-col gap-4 mt-4 pt-2 border-t border-surface-container/60 animate-in fade-in"
@@ -268,40 +269,15 @@ export const IncomeScreen: React.FC = () => {
               handleSaveIncome();
             }}
           >
-            {/* Currency & Amount Field */}
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1 font-semibold">
                 Inflow Amount
               </label>
               <div className="relative flex items-center">
-                <div className="absolute left-2 flex items-center bg-surface-container-high rounded-lg p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setCurrency('$')}
-                    className={`px-2 py-1 rounded-md font-label-md text-label-md font-bold transition-all ${
-                      currency === '$'
-                        ? 'bg-surface-container-lowest text-primary shadow-xs'
-                        : 'text-on-surface-variant'
-                    }`}
-                  >
-                    $
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrency('₹')}
-                    className={`px-2 py-1 rounded-md font-label-md text-label-md font-bold transition-all ${
-                      currency === '₹'
-                        ? 'bg-surface-container-lowest text-primary shadow-xs'
-                        : 'text-on-surface-variant'
-                    }`}
-                  >
-                    ₹
-                  </button>
-                </div>
+                <span className="absolute left-3 font-label-lg font-bold text-primary">{currency}</span>
                 <input
-                  className="w-full h-12 pl-20 pr-4 rounded-xl bg-surface-container-low font-headline-md text-headline-md text-on-surface placeholder:text-outline/40 focus:bg-surface-container-lowest focus:outline-none border border-transparent focus:border-primary/40 transition-colors font-bold"
+                  className="w-full h-12 pl-10 pr-4 rounded-xl bg-surface-container-low font-headline-md text-headline-md text-on-surface placeholder:text-outline/40 focus:bg-surface-container-lowest focus:outline-none border border-transparent focus:border-primary/40 transition-colors font-bold"
                   placeholder="0.00"
-                  inputMode="decimal"
                   type="text"
                   value={amountInput}
                   onChange={e => setAmountInput(e.target.value)}
@@ -309,13 +285,42 @@ export const IncomeScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Source Selector */}
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-1 font-semibold">
-                Income Source
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-label-md text-label-md text-on-surface-variant font-semibold">
+                  Income Source
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSource(v => !v)}
+                  className="text-primary text-label-sm font-semibold hover:underline flex items-center gap-0.5"
+                >
+                  <span className="material-symbols-outlined text-[14px]">add</span>
+                  <span>New Source</span>
+                </button>
+              </div>
+
+              {showAddSource && (
+                <div className="flex items-center gap-2 mb-2 p-2 rounded-xl bg-surface-container-low border border-surface-container">
+                  <input
+                    type="text"
+                    value={newSourceName}
+                    onChange={e => setNewSourceName(e.target.value)}
+                    placeholder="Enter custom source name"
+                    className="flex-1 bg-transparent text-body-md text-on-surface outline-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateSource}
+                    className="px-3 py-1 bg-primary text-on-primary rounded-lg text-label-sm font-bold"
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-1.5">
-                {['Salary', 'Freelance', 'Investments', 'Rental', 'Refund', 'Bonus', 'Other'].map(src => (
+                {availableSources.map(src => (
                   <button
                     key={src}
                     type="button"
@@ -332,148 +337,105 @@ export const IncomeScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Payment Method Chips */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-1 font-semibold">
+                  Received Via
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Bank Transfer', 'UPI', 'Cash', 'Other'].map(dest => (
+                    <button
+                      key={dest}
+                      type="button"
+                      onClick={() => setSelectedDest(dest)}
+                      className={`px-3 py-1.5 rounded-full font-label-sm text-label-sm transition-all ${
+                        selectedDest === dest
+                          ? 'bg-primary text-on-primary font-bold shadow-xs'
+                          : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                      }`}
+                    >
+                      {dest}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-1 font-semibold">
+                  Date Received
+                </label>
+                <input
+                  type="date"
+                  value={dateInput}
+                  onChange={e => setDateInput(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none border border-transparent focus:border-primary/40 text-xs"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-1 font-semibold">
-                Deposit Destination
+                Note / Description
               </label>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { name: 'Bank Transfer', icon: 'account_balance' },
-                  { name: 'UPI', icon: 'qr_code_scanner' },
-                  { name: 'Card', icon: 'credit_card' },
-                  { name: 'Cash', icon: 'payments' },
-                  { name: 'Other', icon: 'more_horiz' },
-                ].map(dest => (
-                  <button
-                    key={dest.name}
-                    type="button"
-                    onClick={() => setSelectedDest(dest.name)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md transition-all ${
-                      selectedDest === dest.name
-                        ? 'bg-secondary text-on-secondary font-bold shadow-xs'
-                        : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">{dest.icon}</span>
-                    <span>{dest.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Date & Memo */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label className="font-label-md text-label-md text-on-surface-variant font-semibold">
-                  Transaction Date
-                </label>
-                <span className="font-label-sm text-label-sm text-primary flex items-center gap-0.5">
-                  <span className="material-symbols-outlined text-[14px]">schedule</span>
-                  Selected: Today (Auto-assigned)
-                </span>
-              </div>
               <input
-                className="w-full h-11 px-3 rounded-xl bg-surface-container-low font-body-md text-body-md text-on-surface focus:bg-surface-container-lowest focus:outline-none border border-surface-container"
-                type="date"
-                value={dateInput}
-                onChange={e => setDateInput(e.target.value)}
+                type="text"
+                value={memoInput}
+                onChange={e => setMemoInput(e.target.value)}
+                placeholder="e.g. October monthly retainer"
+                className="w-full h-10 px-3 rounded-xl bg-surface-container-low font-body-md text-body-md text-on-surface placeholder:text-outline/40 focus:outline-none border border-transparent focus:border-primary/40 text-sm"
               />
-
-              <label className="font-label-md text-label-md text-on-surface-variant pt-1 font-semibold">
-                Memo / Client Reference
-              </label>
-              <div className="relative">
-                <input
-                  className="w-full h-11 pl-3 pr-9 rounded-xl bg-surface-container-low font-body-md text-body-md text-on-surface placeholder:text-outline/50 focus:bg-surface-container-lowest focus:outline-none border border-surface-container"
-                  placeholder="e.g. Q3 Project Milestone 1"
-                  type="text"
-                  value={memoInput}
-                  onChange={e => setMemoInput(e.target.value)}
-                />
-                <span className="material-symbols-outlined absolute right-3 top-3 text-[18px] text-outline pointer-events-none">
-                  edit_note
-                </span>
-              </div>
             </div>
 
-            {/* Action Button */}
             <button
-              className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-md hover:bg-primary-container active:scale-[0.98] transition-all"
               type="submit"
               disabled={isSaving}
+              className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg font-bold flex items-center justify-center gap-2 shadow-md active:scale-98 hover:bg-primary-container transition-all disabled:opacity-60"
             >
               <span className="material-symbols-outlined text-[20px]">
-                {isSaving ? 'sync' : 'check_circle'}
+                {editingIncomeId ? 'check' : 'add'}
               </span>
-              <span>{editingIncomeId ? 'Update Income Entry' : 'Save Income Flow'}</span>
+              <span>
+                {isSaving
+                  ? 'Saving to Supabase...'
+                  : editingIncomeId
+                  ? 'Update Income'
+                  : 'Save Income'}
+              </span>
             </button>
           </form>
         )}
       </section>
 
-      {/* Filter & Search Section */}
-      <section className="flex flex-col gap-2 pt-1">
-        <div className="flex items-center justify-between">
-          <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">Income Inflow Logs</h3>
-          <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">
-            Showing {filteredIncomes.length} Entries
-          </span>
-        </div>
-
+      <section className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-2.5 text-[20px] text-outline">
-              search
-            </span>
+          <div className="flex items-center bg-surface-container-low rounded-xl px-3 py-2 flex-1 border border-surface-container/60">
+            <span className="material-symbols-outlined text-on-surface-variant text-[18px] mr-2">search</span>
             <input
-              className="w-full h-10 pl-9 pr-3 rounded-xl bg-surface-container-lowest font-body-sm text-body-sm text-on-surface placeholder:text-outline/60 focus:outline-none border border-surface-container/60 shadow-xs"
-              placeholder="Search by client, memo or source..."
-              type="text"
+              className="bg-transparent font-body-md text-body-md text-on-surface w-full focus:outline-none placeholder:text-on-surface-variant/40"
+              placeholder="Search income records..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-
           <button
-            onClick={() => {
-              const sources = ['all', 'Salary', 'Freelance', 'Investments'];
-              const curIdx = sources.indexOf(selectedFilterSource);
-              setSelectedFilterSource(sources[(curIdx + 1) % sources.length]);
-            }}
-            className={`min-w-[44px] min-h-[44px] rounded-xl bg-surface-container-lowest flex items-center justify-center transition-all border border-surface-container/60 shadow-xs ${
-              selectedFilterSource !== 'all' ? 'text-primary font-bold ring-1 ring-primary/40' : 'text-on-surface-variant'
-            }`}
-            title={`Filter by source (Current: ${selectedFilterSource})`}
+            onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')}
+            className="w-10 h-10 rounded-xl bg-surface-container-low border border-surface-container/60 flex items-center justify-center text-on-surface-variant hover:text-on-surface"
             type="button"
           >
-            <span className="material-symbols-outlined text-[20px]">tune</span>
-          </button>
-
-          <button
-            onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-            className="min-w-[44px] min-h-[44px] rounded-xl bg-surface-container-lowest flex items-center justify-center text-on-surface-variant hover:text-on-surface border border-surface-container/60 shadow-xs active:scale-95 transition-all"
-            title={`Sort order: ${sortOrder === 'desc' ? 'Newest first' : 'Oldest first'}`}
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[20px]">sort</span>
+            <span className="material-symbols-outlined text-[18px]">
+              {sortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward'}
+            </span>
           </button>
         </div>
-      </section>
 
-      {/* Income Records List */}
-      <section className="flex flex-col gap-3">
-        {/* Group: This Week */}
         {groupedIncomes.thisWeek.length > 0 && (
           <div className="flex flex-col gap-2">
             <div className="font-label-sm text-label-sm text-outline uppercase tracking-wider px-1 pt-1 font-bold">
-              This Week
+              Recent Inflow
             </div>
-
             {groupedIncomes.thisWeek.map(record => {
               const styles = getSourceStyles(record.source);
               const icon = getSourceIcon(record.source);
-
               return (
                 <div
                   key={record.id}
@@ -496,11 +458,10 @@ export const IncomeScreen: React.FC = () => {
                         {record.note || record.source}
                       </p>
                       <span className="font-label-sm text-label-sm text-outline pt-0.5">
-                        {record.date} • Verified
+                        {record.date}
                       </span>
                     </div>
                   </div>
-
                   <div className="flex flex-col items-end shrink-0 pl-2">
                     <span className="font-label-lg text-label-lg font-bold text-primary">
                       {currency}{record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -530,17 +491,14 @@ export const IncomeScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Group: Earlier in Cycle */}
         {groupedIncomes.earlier.length > 0 && (
           <div className="flex flex-col gap-2">
             <div className="font-label-sm text-label-sm text-outline uppercase tracking-wider px-1 pt-1 font-bold">
-              Earlier in Cycle
+              Earlier Inflow
             </div>
-
             {groupedIncomes.earlier.map(record => {
               const styles = getSourceStyles(record.source);
               const icon = getSourceIcon(record.source);
-
               return (
                 <div
                   key={record.id}
@@ -563,11 +521,10 @@ export const IncomeScreen: React.FC = () => {
                         {record.note || record.source}
                       </p>
                       <span className="font-label-sm text-label-sm text-outline pt-0.5">
-                        {record.date} • Completed
+                        {record.date}
                       </span>
                     </div>
                   </div>
-
                   <div className="flex flex-col items-end shrink-0 pl-2">
                     <span className="font-label-lg text-label-lg font-bold text-primary">
                       {currency}{record.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -606,7 +563,6 @@ export const IncomeScreen: React.FC = () => {
         )}
       </section>
 
-      {/* Delete Confirmation Modal */}
       {incomeToDelete && (
         <div className="fixed inset-x-4 bottom-24 z-50 max-w-sm mx-auto bg-inverse-surface text-inverse-on-surface p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-2 animate-in fade-in slide-in-from-bottom-4">
           <div className="flex items-center gap-2 min-w-0">

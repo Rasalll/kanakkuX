@@ -33,7 +33,6 @@ export function useSources() {
     } = await supabase.auth.getUser();
     if (!user) return null;
 
-    // Upsert in case the name exists but was archived
     const { data, error } = await supabase
       .from('sources')
       .upsert(

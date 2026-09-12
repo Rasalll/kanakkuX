@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import { useLedger } from '../context/LedgerContext';
 import { LoanItem } from '../types';
@@ -13,7 +15,6 @@ export const OwedScreen: React.FC = () => {
     currency,
   } = useLedger();
 
-  // Form State
   const [isLendFormOpen, setIsLendFormOpen] = useState(false);
   const [personName, setPersonName] = useState('');
   const [amountLent, setAmountLent] = useState('');
@@ -21,19 +22,15 @@ export const OwedScreen: React.FC = () => {
   const [channel, setChannel] = useState('UPI');
   const [note, setNote] = useState('');
 
-  // Filter tab state
   const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'partial' | 'settled'>('all');
 
-  // Repayment Modal State
   const [activeLoanForRepay, setActiveLoanForRepay] = useState<LoanItem | null>(null);
   const [repayAmount, setRepayAmount] = useState('');
   const [repayDate, setRepayDate] = useState(new Date().toISOString().split('T')[0]);
   const [repayMethod, setRepayMethod] = useState('UPI');
 
-  // History Dialog State
   const [historyLoan, setHistoryLoan] = useState<LoanItem | null>(null);
 
-  // Filtered Loans
   const filteredLoans = useMemo(() => {
     if (filterTab === 'all') return loans;
     return loans.filter(l => l.status === filterTab);
@@ -41,7 +38,8 @@ export const OwedScreen: React.FC = () => {
 
   const handleSaveLoan = (e: React.FormEvent) => {
     e.preventDefault();
-    const val = parseFloat(amountLent);
+    const cleanAmount = amountLent.replace(/[^0-9.]/g, '');
+    const val = parseFloat(cleanAmount);
     if (!personName.trim() || !val || isNaN(val) || val <= 0) {
       alert('Please specify a valid borrower name and loan amount.');
       return;
@@ -65,7 +63,8 @@ export const OwedScreen: React.FC = () => {
     e.preventDefault();
     if (!activeLoanForRepay) return;
 
-    const amt = parseFloat(repayAmount);
+    const cleanAmount = repayAmount.replace(/[^0-9.]/g, '');
+    const amt = parseFloat(cleanAmount);
     if (!amt || isNaN(amt) || amt <= 0) {
       alert('Please enter a valid repayment amount.');
       return;
@@ -84,7 +83,6 @@ export const OwedScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col w-full gap-4">
-      {/* Top Summary Accent Hero Card */}
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-container to-primary text-on-primary p-4 sm:p-5 shadow-lg">
         <div className="absolute -right-6 -bottom-6 w-36 h-36 rounded-full bg-on-primary-container/10 pointer-events-none blur-2xl"></div>
 
@@ -108,14 +106,13 @@ export const OwedScreen: React.FC = () => {
 
           <div className="flex items-baseline gap-2 mt-0.5">
             <h1 className="font-metric-xl-mobile text-metric-xl-mobile md:text-4xl text-on-primary tracking-tight font-bold">
-              {currency}{totalAmountOwed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {currency}{totalAmountOwed.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h1>
             <span className="font-label-sm text-label-sm text-on-primary-container/90">
               across {loanMetrics.totalCount} registered loans
             </span>
           </div>
 
-          {/* Status Badges Metrics Strip */}
           <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-white/10 bg-black/10 p-2.5 rounded-xl">
             <div className="flex flex-col">
               <span className="font-label-sm text-label-sm text-tertiary-fixed-dim flex items-center gap-1 font-semibold">
@@ -123,7 +120,7 @@ export const OwedScreen: React.FC = () => {
                 {loanMetrics.pendingCount} Pending
               </span>
               <span className="font-label-lg text-label-lg text-on-primary font-bold mt-0.5">
-                {currency}{loanMetrics.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {currency}{loanMetrics.pendingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
 
@@ -133,7 +130,7 @@ export const OwedScreen: React.FC = () => {
                 {loanMetrics.partialCount} Partial
               </span>
               <span className="font-label-lg text-label-lg text-on-primary font-bold mt-0.5">
-                {currency}{loanMetrics.partialAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {currency}{loanMetrics.partialAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
 
@@ -143,14 +140,13 @@ export const OwedScreen: React.FC = () => {
                 {loanMetrics.settledCount} Settled
               </span>
               <span className="font-label-lg text-label-lg text-on-primary font-bold mt-0.5">
-                {currency}{loanMetrics.settledAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {currency}{loanMetrics.settledAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Expandable 'Add Money Lent' Form */}
       {isLendFormOpen && (
         <section className="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-md border border-surface-container flex flex-col gap-3 transition-all animate-in slide-in-from-top-2">
           <div className="flex items-center justify-between pb-1 border-b border-surface-container/60">
@@ -180,7 +176,7 @@ export const OwedScreen: React.FC = () => {
                 <span className="material-symbols-outlined text-outline text-[18px] mr-2">person</span>
                 <input
                   className="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none placeholder:text-outline"
-                  placeholder="e.g. Rahul Sharma, Maya Patel"
+                  placeholder="e.g. Rahul Sharma"
                   required
                   type="text"
                   value={personName}
@@ -201,8 +197,7 @@ export const OwedScreen: React.FC = () => {
                     className="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none font-bold"
                     placeholder="0.00"
                     required
-                    step="0.01"
-                    type="number"
+                    type="text"
                     value={amountLent}
                     onChange={e => setAmountLent(e.target.value)}
                   />
@@ -248,12 +243,13 @@ export const OwedScreen: React.FC = () => {
 
             <div>
               <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">
-                Reason / Notes
+                Memo / Reason
               </label>
               <div className="flex items-center bg-surface-container-low rounded-xl px-3 py-2 border border-surface-container/60">
+                <span className="material-symbols-outlined text-outline text-[18px] mr-2">description</span>
                 <input
-                  className="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none placeholder:text-outline"
-                  placeholder="e.g. Dinner split, Concert pass"
+                  className="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none text-sm placeholder:text-outline"
+                  placeholder="e.g. Travel tickets assistance"
                   type="text"
                   value={note}
                   onChange={e => setNote(e.target.value)}
@@ -262,249 +258,150 @@ export const OwedScreen: React.FC = () => {
             </div>
 
             <button
-              className="mt-1 w-full py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-md active:scale-98 hover:bg-primary-container transition-all"
+              className="mt-1 w-full py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-98 hover:bg-primary-container transition-all"
               type="submit"
             >
-              <span className="material-symbols-outlined text-[18px]">verified</span>
-              <span>Record Loan</span>
+              <span className="material-symbols-outlined text-[18px]">check</span>
+              <span>Save Loan Record</span>
             </button>
           </form>
         </section>
       )}
 
-      {/* Filter Category Tabs */}
-      <section className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar">
-        <button
-          onClick={() => setFilterTab('all')}
-          className={`px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap font-bold transition-all ${
-            filterTab === 'all'
-              ? 'bg-primary text-on-primary shadow-xs'
-              : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
-          }`}
-          type="button"
-        >
-          All ({loans.length})
-        </button>
+      <div className="flex items-center justify-between border-b border-surface-container pb-2">
+        <div className="flex gap-1 bg-surface-container-low p-1 rounded-xl">
+          {(['all', 'pending', 'partial', 'settled'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setFilterTab(tab)}
+              className={`px-3 py-1 rounded-lg font-label-sm text-label-sm capitalize transition-all ${
+                filterTab === tab
+                  ? 'bg-surface-container-lowest font-bold text-on-surface shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+              type="button"
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+        <span className="font-label-sm text-label-sm text-on-surface-variant">
+          {filteredLoans.length} entries
+        </span>
+      </div>
 
-        <button
-          onClick={() => setFilterTab('pending')}
-          className={`px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap font-bold transition-all ${
-            filterTab === 'pending'
-              ? 'bg-primary text-on-primary shadow-xs'
-              : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
-          }`}
-          type="button"
-        >
-          Pending ({loanMetrics.pendingCount})
-        </button>
-
-        <button
-          onClick={() => setFilterTab('partial')}
-          className={`px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap font-bold transition-all ${
-            filterTab === 'partial'
-              ? 'bg-primary text-on-primary shadow-xs'
-              : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
-          }`}
-          type="button"
-        >
-          Partially Paid ({loanMetrics.partialCount})
-        </button>
-
-        <button
-          onClick={() => setFilterTab('settled')}
-          className={`px-4 py-2 rounded-full font-label-sm text-label-sm whitespace-nowrap font-bold transition-all ${
-            filterTab === 'settled'
-              ? 'bg-primary text-on-primary shadow-xs'
-              : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
-          }`}
-          type="button"
-        >
-          Fully Paid ({loanMetrics.settledCount})
-        </button>
-      </section>
-
-      {/* Debt & Borrower Cards List */}
       <section className="flex flex-col gap-3">
         {filteredLoans.length === 0 ? (
           <div className="bg-surface-container-lowest rounded-2xl p-8 text-center flex flex-col items-center justify-center gap-2 border border-surface-container/60">
             <span className="material-symbols-outlined text-outline text-4xl">handshake</span>
-            <p className="font-headline-sm text-on-surface font-bold">No Records in this Filter</p>
-            <p className="font-body-sm text-on-surface-variant">Switch filter tabs or lend money above.</p>
+            <p className="font-headline-sm text-on-surface font-bold">No Loans Found</p>
+            <p className="font-body-sm text-on-surface-variant">
+              {filterTab === 'all'
+                ? 'No money lent records found. Record your first loan above!'
+                : `No ${filterTab} loans right now.`}
+            </p>
           </div>
         ) : (
-          filteredLoans.map(loan => {
-            const percentRepaid = Math.round((loan.amountReceived / loan.amountLent) * 100);
-
-            return (
-              <article
-                key={loan.id}
-                className={`bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-xs border border-surface-container/50 flex flex-col gap-3 transition-all ${
-                  loan.status === 'settled' ? 'opacity-85' : 'hover:shadow-md'
-                }`}
-              >
-                {/* Header row with Avatar & Status */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative w-11 h-11 rounded-full overflow-hidden shrink-0 bg-primary/10 flex items-center justify-center text-primary font-headline-sm font-bold border border-surface-container">
-                      {loan.avatarUrl ? (
-                        <img
-                          className="w-full h-full object-cover"
-                          alt={loan.personName}
-                          src={loan.avatarUrl}
-                        />
-                      ) : loan.status === 'settled' ? (
-                        <span className="material-symbols-outlined text-[24px] text-primary">check_circle</span>
-                      ) : (
-                        <span>{loan.personName.slice(0, 2).toUpperCase()}</span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col min-w-0">
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
-                        {loan.personName}
-                      </h3>
-                      <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
-                        <span>Lent {currency}{loan.amountLent.toFixed(2)}</span>
-                        <span>•</span>
-                        <span>{loan.dateLent} via {loan.channel}</span>
+          filteredLoans.map(loan => (
+            <div
+              key={loan.id}
+              className="bg-surface-container-lowest rounded-2xl p-4 shadow-xs border border-surface-container/40 flex flex-col gap-3"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-base shrink-0">
+                    {loan.personName.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                      {loan.personName}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="font-label-sm text-outline">
+                        Lent {loan.dateLent} via {loan.channel}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full font-label-sm text-[11px] font-bold uppercase ${
+                          loan.status === 'settled'
+                            ? 'bg-primary/10 text-primary'
+                            : loan.status === 'partial'
+                            ? 'bg-secondary-fixed-dim/20 text-secondary'
+                            : 'bg-tertiary-fixed-dim/20 text-tertiary-container'
+                        }`}
+                      >
+                        {loan.status}
                       </span>
                     </div>
                   </div>
-
-                  {/* Status Badge */}
-                  <div className="flex items-center gap-1 bg-surface-container-high px-2.5 py-1 rounded-full shrink-0">
-                    {loan.status === 'partial' && (
-                      <>
-                        <span className="material-symbols-outlined text-[13px] text-secondary">pie_chart</span>
-                        <span className="font-label-sm text-label-sm text-secondary font-bold">Partially Paid</span>
-                      </>
-                    )}
-                    {loan.status === 'pending' && (
-                      <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
-                        <span className="font-label-sm text-label-sm text-tertiary font-bold">Pending</span>
-                      </>
-                    )}
-                    {loan.status === 'settled' && (
-                      <>
-                        <span className="material-symbols-outlined text-[14px] text-primary">verified</span>
-                        <span className="font-label-sm text-label-sm text-primary font-bold">Fully Paid</span>
-                      </>
-                    )}
-                  </div>
                 </div>
 
-                {/* Progress bar and calculation block */}
-                <div className="bg-surface-container-low p-3 rounded-xl flex flex-col gap-1.5 border border-surface-container/60">
-                  <div className="flex justify-between items-center text-label-sm font-label-sm">
-                    {loan.status === 'settled' ? (
-                      <span className="text-primary font-bold flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[15px]">done_all</span>
-                        Settled in full ({currency}{loan.amountLent.toFixed(2)})
-                      </span>
-                    ) : (
-                      <span className="text-on-surface-variant font-medium">
-                        {loan.status === 'partial'
-                          ? `Settled: ${currency}${loan.amountReceived.toFixed(2)} of ${currency}${loan.amountLent.toFixed(2)} (${percentRepaid}%)`
-                          : '0% Repaid'}
-                      </span>
-                    )}
-                    <span
-                      className={`font-bold ${
-                        loan.status === 'settled'
-                          ? 'text-outline'
-                          : loan.status === 'partial'
-                          ? 'text-secondary'
-                          : 'text-tertiary'
-                      }`}
-                    >
-                      Remaining {currency}{loan.remaining.toFixed(2)}
-                    </span>
-                  </div>
-
-                  {/* Visual Bar */}
-                  <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        loan.status === 'settled'
-                          ? 'bg-primary'
-                          : loan.status === 'partial'
-                          ? 'bg-secondary'
-                          : 'bg-tertiary'
-                      }`}
-                      style={{ width: `${percentRepaid}%` }}
-                    />
-                  </div>
-
-                  {loan.note && (
-                    <span className="text-body-sm font-body-sm text-outline italic truncate">
-                      "{loan.note}"
-                    </span>
-                  )}
+                <div className="flex flex-col items-end">
+                  <span className="font-label-sm text-outline">Remaining</span>
+                  <span className="font-headline-sm text-headline-sm font-bold text-primary">
+                    {currency}{loan.remaining.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                  <span className="font-body-sm text-[11px] text-outline">
+                    of {currency}{loan.amountLent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
+              </div>
 
-                {/* Action Buttons Row */}
-                <div className="flex items-center justify-between pt-1">
-                  {loan.status !== 'settled' ? (
+              {loan.note && (
+                <p className="font-body-sm text-body-sm text-on-surface-variant bg-surface-container-low px-3 py-1.5 rounded-xl text-xs">
+                  {loan.note}
+                </p>
+              )}
+
+              <div className="flex items-center justify-between pt-2 border-t border-surface-container/40">
+                <button
+                  onClick={() => setHistoryLoan(loan)}
+                  className="flex items-center gap-1 font-label-sm text-label-sm text-outline hover:text-on-surface transition-colors"
+                  type="button"
+                >
+                  <span className="material-symbols-outlined text-[16px]">history</span>
+                  <span>History ({loan.repayments.length})</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => deleteLoan(loan.id)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-error hover:bg-error-container/30 transition-all"
+                    title="Delete Loan Record"
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+
+                  {loan.status !== 'settled' && (
                     <button
                       onClick={() => {
                         setActiveLoanForRepay(loan);
-                        setRepayAmount('');
-                        setRepayDate(new Date().toISOString().split('T')[0]);
+                        setRepayAmount(loan.remaining.toString());
                       }}
-                      className="text-primary hover:text-primary-container font-label-md text-label-md font-bold flex items-center gap-1 bg-on-primary-container/20 hover:bg-on-primary-container/30 px-3.5 py-1.5 rounded-full active:scale-95 transition-all"
+                      className="px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[16px]">add_task</span>
-                      <span>+ Receive Money</span>
+                      <span className="material-symbols-outlined text-[16px]">payments</span>
+                      <span>Record Payment</span>
                     </button>
-                  ) : (
-                    <span className="font-label-sm text-label-sm text-outline font-medium">
-                      Settled via {loan.channel}
-                    </span>
                   )}
-
-                  <div className="flex items-center gap-1 text-on-surface-variant">
-                    <button
-                      onClick={() => setHistoryLoan(loan)}
-                      className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors"
-                      title="View Repayment History"
-                      type="button"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">history</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (confirm(`Remove loan record for ${loan.personName}?`)) {
-                          deleteLoan(loan.id);
-                        }
-                      }}
-                      className="p-2 hover:bg-surface-container rounded-full text-error transition-colors"
-                      title="Delete Loan"
-                      type="button"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
-                  </div>
                 </div>
-              </article>
-            );
-          })
+              </div>
+            </div>
+          ))
         )}
       </section>
 
-      {/* Interactive Receive Money Repayment Modal */}
       {activeLoanForRepay && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div 
-            className="bg-surface-container-lowest w-full max-w-sm rounded-2xl p-5 shadow-2xl flex flex-col gap-3.5 border border-surface-container"
+          <div
+            className="bg-surface-container-lowest w-full max-w-md rounded-2xl p-5 shadow-2xl flex flex-col gap-4 border border-surface-container"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-1 border-b border-surface-container/60">
+            <div className="flex items-center justify-between pb-2 border-b border-surface-container">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[18px]">payments</span>
+                  <span className="material-symbols-outlined text-[18px]">receipt</span>
                 </div>
                 <div>
                   <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
@@ -524,7 +421,6 @@ export const OwedScreen: React.FC = () => {
               </button>
             </div>
 
-            {/* Live Calculation Banner */}
             <div className="bg-surface-container-low p-3 rounded-xl text-body-sm font-body-sm flex flex-col gap-1 text-on-surface border border-surface-container/60">
               <div className="flex justify-between items-center text-label-sm font-label-sm">
                 <span>Initial Lent: <strong>{currency}{activeLoanForRepay.amountLent.toFixed(2)}</strong></span>
@@ -533,7 +429,7 @@ export const OwedScreen: React.FC = () => {
               <div className="flex justify-between items-center pt-1 border-t border-surface-container text-primary font-label-md text-label-md">
                 <span>New Remaining:</span>
                 <span className="font-bold text-headline-sm text-primary">
-                  {currency}{Math.max(0, activeLoanForRepay.remaining - (parseFloat(repayAmount) || 0)).toFixed(2)}
+                  {currency}{Math.max(0, activeLoanForRepay.remaining - (parseFloat(repayAmount.replace(/[^0-9.]/g, '')) || 0)).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -549,9 +445,7 @@ export const OwedScreen: React.FC = () => {
                     className="w-full bg-transparent font-headline-sm text-headline-sm text-on-surface font-bold outline-none"
                     placeholder="Enter amount"
                     required
-                    step="0.01"
-                    type="number"
-                    max={activeLoanForRepay.remaining}
+                    type="text"
                     value={repayAmount}
                     onChange={e => setRepayAmount(e.target.value)}
                     autoFocus
@@ -607,7 +501,6 @@ export const OwedScreen: React.FC = () => {
         </div>
       )}
 
-      {/* History Log Dialog */}
       {historyLoan && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 

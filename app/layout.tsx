@@ -5,9 +5,9 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'LedgerFlow — Personal Finance Tracker',
+  title: 'kanakkuX – Modern Financial Ledger & Tracker',
   description:
-    'Track your expenses, income, and money lent to others. Simple, fast, and mobile-friendly personal finance management.',
+    'Track your expenses, income, and peer-to-peer lending with real-time cloud synchronization.',
 };
 
 export default function RootLayout({

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useLedger } from '../context/LedgerContext';
 
@@ -10,6 +12,9 @@ export const QuickAddModal: React.FC = () => {
     addIncome,
     addLoan,
     currency,
+    customCategories,
+    sourcesList,
+    addCustomSource,
   } = useLedger();
 
   const [tab, setTab] = useState<'expense' | 'income' | 'lent'>('expense');
@@ -17,6 +22,9 @@ export const QuickAddModal: React.FC = () => {
   const [note, setNote] = useState<string>('');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [category, setCategory] = useState<string>('Food');
+  const [source, setSource] = useState<string>('');
+  const [newSourceInput, setNewSourceInput] = useState<string>('');
+  const [showAddSource, setShowAddSource] = useState<boolean>(false);
   const [paymentMethod, setPaymentMethod] = useState<string>('UPI');
   const [errorShake, setErrorShake] = useState(false);
 
@@ -25,6 +33,9 @@ export const QuickAddModal: React.FC = () => {
       setTab(quickAddDefaultTab);
       setAmount('');
       setNote('');
+      setSource('');
+      setNewSourceInput('');
+      setShowAddSource(false);
       setDate(new Date().toISOString().split('T')[0]);
       if (quickAddDefaultTab === 'expense') {
         setCategory('Food');
@@ -41,7 +52,7 @@ export const QuickAddModal: React.FC = () => {
 
   if (!quickAddModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanAmount = amount.replace(/[^0-9.]/g, '');
     const val = Math.abs(parseFloat(cleanAmount) || 0);
@@ -52,25 +63,26 @@ export const QuickAddModal: React.FC = () => {
     }
 
     if (tab === 'expense') {
-      addExpense({
+      await addExpense({
         title: note.trim() || `${category} Expense`,
-        note: note.trim() || 'Quick logged outflow',
+        note: note.trim() || (null as any),
         amount: val,
         category,
+        source: source || undefined,
         paymentMethod,
         date: date || new Date().toISOString().split('T')[0],
       });
     } else if (tab === 'income') {
-      addIncome({
-        title: note.trim() || `${category} Inflow`,
-        note: note.trim() || 'Recorded income flow',
+      await addIncome({
+        title: note.trim() || `${source || category} Inflow`,
+        note: note.trim() || (null as any),
         amount: val,
-        source: category,
+        source: source || category || 'Salary',
         destination: paymentMethod,
         date: date || new Date().toISOString().split('T')[0],
       });
     } else {
-      addLoan({
+      await addLoan({
         personName: note.trim() || 'Friend',
         amountLent: val,
         dateLent: date || new Date().toISOString().split('T')[0],
@@ -82,11 +94,22 @@ export const QuickAddModal: React.FC = () => {
     closeQuickAdd();
   };
 
+  const handleCreateSource = async () => {
+    if (!newSourceInput.trim()) return;
+    await addCustomSource(newSourceInput.trim());
+    setSource(newSourceInput.trim());
+    setNewSourceInput('');
+    setShowAddSource(false);
+  };
+
   const getTitle = () => {
     if (tab === 'expense') return 'Log New Expense';
     if (tab === 'income') return 'Add New Income Stream';
     return 'Register Lent Loan';
   };
+
+  const allCategories = Array.from(new Set(['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Subs', ...customCategories]));
+  const allSources = Array.from(new Set(['Salary', 'Freelance', 'Business', 'Investments', 'Rental', 'Gift', ...sourcesList]));
 
   return (
     <div className="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
@@ -94,112 +117,74 @@ export const QuickAddModal: React.FC = () => {
         className="w-full max-w-md bg-surface-container-lowest rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl flex flex-col gap-4 max-h-[92vh] overflow-y-auto no-scrollbar"
         onClick={e => e.stopPropagation()}
       >
-        {/* Drag Handle Indicator on Mobile */}
-        <div 
-          className="w-12 h-1.5 rounded-full bg-surface-variant mx-auto sm:hidden cursor-pointer" 
-          onClick={closeQuickAdd}
-        />
-
-        <div className="flex items-center justify-between">
-          <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-            {getTitle()}
-          </h3>
+        <div className="flex items-center justify-between pb-2 border-b border-surface-container">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[24px]">bolt</span>
+            <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
+              {getTitle()}
+            </h3>
+          </div>
           <button
-            className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
             onClick={closeQuickAdd}
+            className="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition-colors"
             type="button"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
-        {/* Segment Tabs */}
-        <div className="grid grid-cols-3 p-1 rounded-xl bg-surface-container-low text-on-surface-variant">
-          <button
-            type="button"
-            onClick={() => setTab('expense')}
-            className={`py-2 text-center rounded-lg font-label-md transition-all ${
-              tab === 'expense'
-                ? 'bg-surface-container-lowest text-on-surface shadow-sm font-semibold'
-                : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            Expense
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('income')}
-            className={`py-2 text-center rounded-lg font-label-md transition-all ${
-              tab === 'income'
-                ? 'bg-surface-container-lowest text-on-surface shadow-sm font-semibold'
-                : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            Income
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('lent')}
-            className={`py-2 text-center rounded-lg font-label-md transition-all ${
-              tab === 'lent'
-                ? 'bg-surface-container-lowest text-on-surface shadow-sm font-semibold'
-                : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            Lent
-          </button>
+        <div className="grid grid-cols-3 gap-1 bg-surface-container-low p-1 rounded-xl">
+          {(['expense', 'income', 'lent'] as const).map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`py-2 rounded-lg font-label-md text-label-md font-bold capitalize transition-all ${
+                tab === t
+                  ? 'bg-surface-container-lowest text-primary shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              {t === 'lent' ? 'Loan Out' : t}
+            </button>
+          ))}
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-          {/* Amount Input */}
-          <div className="flex flex-col gap-1">
-            <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-              {tab === 'lent' ? 'Loan Amount' : 'Amount'}
+          <div>
+            <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">
+              Amount ({currency})
             </label>
-            <div className={`relative flex items-center transition-transform ${errorShake ? 'animate-bounce text-error' : ''}`}>
-              <span className="absolute left-4 font-headline-md text-headline-md text-primary font-bold">
-                {currency}
-              </span>
+            <div className={`flex items-center bg-surface-container rounded-xl px-3.5 py-2.5 border transition-all ${
+              errorShake ? 'border-error animate-shake' : 'border-surface-container-high'
+            }`}>
+              <span className="font-label-lg text-label-lg text-primary mr-2 font-bold">{currency}</span>
               <input
                 type="text"
-                inputMode="decimal"
                 placeholder="0.00"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
                 autoFocus
-                className="w-full h-14 pl-10 pr-4 rounded-xl bg-surface-container-low font-headline-md text-headline-md text-on-surface placeholder:text-on-surface-variant/30 focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-primary/40 shadow-inner"
+                className="w-full bg-transparent font-headline-sm text-headline-sm text-on-surface font-bold outline-none"
               />
             </div>
           </div>
 
-          {/* Note or Name Input */}
-          <div className="flex flex-col gap-1">
-            <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-              {tab === 'lent' ? "Borrower's Full Name" : 'Note / Counterparty'}
-            </label>
-            <input
-              type="text"
-              placeholder={tab === 'lent' ? 'e.g. David Miller, Priya V.' : 'e.g. Dinner, Client Retainer, David M.'}
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              className="w-full h-12 px-4 rounded-xl bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest border border-transparent focus:border-primary/40"
-            />
-          </div>
-
-          {/* Dynamic Category / Source Selection */}
           {tab === 'expense' && (
-            <div className="flex flex-col gap-1.5">
-              <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Category</label>
-              <div className="flex flex-wrap gap-1.5">
-                {['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Subs'].map(cat => (
+            <div>
+              <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">
+                Category
+              </label>
+              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto no-scrollbar">
+                {allCategories.map(cat => (
                   <button
                     key={cat}
                     type="button"
                     onClick={() => setCategory(cat)}
-                    className={`px-3 py-1.5 rounded-full font-label-sm transition-all ${
+                    className={`px-3 py-1 rounded-full text-label-sm font-label-sm transition-all ${
                       category === cat
-                        ? 'bg-primary text-on-primary shadow-xs'
-                        : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                        ? 'bg-primary text-on-primary font-bold shadow-xs'
+                        : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
                     }`}
                   >
                     {cat}
@@ -209,75 +194,130 @@ export const QuickAddModal: React.FC = () => {
             </div>
           )}
 
-          {tab === 'income' && (
-            <div className="flex flex-col gap-1.5">
-              <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Income Source</label>
-              <div className="flex flex-wrap gap-1.5">
-                {['Salary', 'Freelance', 'Investments', 'Rental', 'Refund', 'Bonus'].map(src => (
+          {tab !== 'lent' && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-label-sm text-label-sm text-on-surface-variant font-semibold">
+                  Money Source
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSource(!showAddSource)}
+                  className="text-primary text-label-sm font-semibold hover:underline"
+                >
+                  + Custom Source
+                </button>
+              </div>
+
+              {showAddSource && (
+                <div className="flex items-center gap-2 mb-2 p-2 rounded-xl bg-surface-container-low border border-surface-container">
+                  <input
+                    type="text"
+                    value={newSourceInput}
+                    onChange={e => setNewSourceInput(e.target.value)}
+                    placeholder="e.g. HDFC Salary, Cash Stash"
+                    className="flex-1 bg-transparent text-body-md text-on-surface outline-none text-xs"
+                  />
                   <button
-                    key={src}
                     type="button"
-                    onClick={() => setCategory(src)}
-                    className={`px-3 py-1.5 rounded-full font-label-sm transition-all ${
-                      category === src
-                        ? 'bg-primary text-on-primary shadow-xs'
-                        : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                    onClick={handleCreateSource}
+                    className="px-3 py-1 bg-primary text-on-primary rounded-lg text-label-sm font-bold"
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => setSource('')}
+                  className={`px-3 py-1 rounded-full text-label-sm font-label-sm transition-all ${
+                    !source
+                      ? 'bg-surface-container-highest text-on-surface font-bold'
+                      : 'bg-surface-container text-on-surface-variant'
+                  }`}
+                >
+                  None
+                </button>
+                {allSources.map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSource(s)}
+                    className={`px-3 py-1 rounded-full text-label-sm font-label-sm transition-all ${
+                      source === s
+                        ? 'bg-primary text-on-primary font-bold shadow-xs'
+                        : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
                     }`}
                   >
-                    {src}
+                    {s}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Payment Method / Channel Selection */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-              {tab === 'income' ? 'Deposit Destination' : 'Payment Method'}
+          <div>
+            <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">
+              Payment Method
             </label>
             <div className="flex flex-wrap gap-1.5">
-              {['UPI', 'Bank Transfer', 'Card', 'Cash', 'Other'].map(method => (
+              {(tab === 'lent' ? ['UPI', 'Cash', 'Bank Transfer', 'Other'] : ['UPI', 'Card', 'Bank Transfer', 'Cash', 'Other']).map(m => (
                 <button
-                  key={method}
+                  key={m}
                   type="button"
-                  onClick={() => setPaymentMethod(method)}
-                  className={`px-3 py-1.5 rounded-full font-label-sm transition-all ${
-                    paymentMethod === method
-                      ? 'bg-secondary text-on-secondary shadow-xs'
-                      : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                  onClick={() => setPaymentMethod(m)}
+                  className={`px-3 py-1.5 rounded-full text-label-sm font-label-sm transition-all ${
+                    paymentMethod === m
+                      ? 'bg-primary text-on-primary font-bold shadow-xs'
+                      : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
                   }`}
                 >
-                  {method}
+                  {m}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Date Input */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Date</label>
-              <span className="font-label-sm text-primary">Defaults to Today</span>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">
+                Date
+              </label>
+              <div className="flex items-center bg-surface-container rounded-xl px-3 py-2 border border-surface-container-high">
+                <input
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  className="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none text-xs"
+                />
+              </div>
             </div>
-            <input
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              className="w-full h-11 px-3 rounded-xl bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest"
-            />
+
+            <div>
+              <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">
+                {tab === 'lent' ? 'Borrower Name' : 'Memo'}
+              </label>
+              <div className="flex items-center bg-surface-container rounded-xl px-3 py-2 border border-surface-container-high">
+                <input
+                  type="text"
+                  placeholder={tab === 'lent' ? 'Name' : 'Note'}
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  className="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none text-xs"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Commit Button */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-md active:scale-95 hover:bg-primary-container transition-all"
-            >
-              <span className="material-symbols-outlined text-[20px]">check_circle</span>
-              <span>Commit Log</span>
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="mt-2 w-full py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-98 hover:bg-primary-container transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px]">add_circle</span>
+            <span>Save to Cloud</span>
+          </button>
         </form>
       </div>
     </div>

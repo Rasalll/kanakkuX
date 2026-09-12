@@ -16,7 +16,6 @@ export function useCategories() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Fetch global defaults (user_id IS NULL) + user's custom categories
     const { data, error } = await supabase
       .from('categories')
       .select('*')
