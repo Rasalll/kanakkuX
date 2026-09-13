@@ -82,24 +82,43 @@ export const DashboardScreen: React.FC = () => {
     });
 
     loans.forEach(l => {
+      const isLoan = l.type === 'loan';
       list.push({
         id: l.id,
         type: 'loan',
-        title: `Lent: ${l.personName}`,
-        subtitle: l.status === 'settled' ? 'Settled' : `${currency}${l.remaining.toLocaleString('en-IN')} remaining`,
+        title: isLoan ? `Loan on ${l.dateLent}` : `Lent on ${l.dateLent}`,
+        subtitle: `${l.personName} • ${l.status === 'settled' ? 'Settled' : `${currency}${l.remaining.toLocaleString('en-IN')} remaining`}`,
         date: l.dateLent,
         amount: l.amountLent,
-        badgeText: l.status === 'settled' ? 'Settled' : 'Pending',
-        icon: 'volunteer_activism',
-        iconBg: 'bg-tertiary-fixed',
-        iconColor: 'text-on-tertiary-fixed',
-        amountColor: 'text-tertiary',
+        badgeText: isLoan ? 'Loan' : 'Lent',
+        icon: isLoan ? 'account_balance' : 'volunteer_activism',
+        iconBg: isLoan ? 'bg-amber-500/20' : 'bg-tertiary-fixed',
+        iconColor: isLoan ? 'text-amber-600 dark:text-amber-400' : 'text-on-tertiary-fixed',
+        amountColor: isLoan ? 'text-amber-600 dark:text-amber-400' : 'text-tertiary',
         prefix: '',
         onClick: () => setActiveTab('owed'),
       });
+
+      (l.repayments || []).forEach(r => {
+        list.push({
+          id: `repay-${r.id}`,
+          type: 'loan',
+          title: isLoan ? `Loan return on ${r.date}` : `Lent return on ${r.date}`,
+          subtitle: `${l.personName} via ${r.method}`,
+          date: r.date,
+          amount: r.amount,
+          badgeText: isLoan ? 'Loan Return' : 'Lent Return',
+          icon: 'payments',
+          iconBg: 'bg-secondary-fixed',
+          iconColor: 'text-on-secondary-fixed',
+          amountColor: 'text-primary',
+          prefix: '+',
+          onClick: () => setActiveTab('owed'),
+        });
+      });
     });
 
-    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
   }, [expenses, incomes, loans, currency, setActiveTab]);
 
   return (

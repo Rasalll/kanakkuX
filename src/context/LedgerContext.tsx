@@ -53,13 +53,16 @@ interface LedgerContextType {
     totalCount: number;
   };
 
+  userEmail: string | null;
+  logout: () => Promise<void>;
   addExpense: (expense: Omit<ExpenseItem, 'id' | 'createdAt'>) => Promise<void>;
   editExpense: (id: string, data: Partial<ExpenseItem>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   addIncome: (income: Omit<IncomeItem, 'id' | 'createdAt'>) => Promise<void>;
   editIncome: (id: string, data: Partial<IncomeItem>) => Promise<void>;
   deleteIncome: (id: string) => Promise<void>;
-  addLoan: (loan: { personName: string; amountLent: number; dateLent: string; channel: string; note: string; avatarUrl?: string }) => Promise<void>;
+  addLoan: (loan: { personName: string; amountLent: number; dateLent: string; channel: string; note: string; avatarUrl?: string; type?: 'lent' | 'loan' }) => Promise<void>;
+  updateLoan: (id: string, data: { personName: string; amountLent: number; dateLent: string; channel: string; note: string; type?: 'lent' | 'loan' }) => Promise<void>;
   recordLoanRepayment: (loanId: string, payment: { amount: number; date: string; method: string; note?: string }) => Promise<void>;
   deleteLoan: (id: string) => Promise<void>;
 
@@ -122,6 +125,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [sourcesMap, setSourcesMap] = useState<SourceRow[]>([]);
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [currentMonthIndex, setCurrentMonthIndex] = useState<number>(MONTHS_LIST.length - 1);
@@ -221,6 +225,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (remaining <= 0) st = 'settled';
           else if (totalReceived > 0) st = 'partial';
 
+          const isLoan = row.type === 'loan' || (typeof row.note === 'string' && row.note.startsWith('[LOAN]'));
+          const cleanNote = (row.note || '').replace(/^\[(LOAN|LENT)\]\s*/i, '');
+
           return {
             id: row.id,
             personName: row.person_name,
@@ -229,7 +236,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             remaining,
             dateLent: row.lent_date,
             channel: row.lent_via,
-            note: row.note || '',
+            note: cleanNote,
+            type: isLoan ? 'loan' : 'lent',
             status: st,
             repayments: reps,
             createdAt: new Date(row.created_at).getTime(),
@@ -248,6 +256,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setUserId(user.id);
+        setUserEmail(user.email ?? null);
         loadData(user.id);
       } else {
         setIsLoading(false);
@@ -257,9 +266,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUserId(session.user.id);
+        setUserEmail(session.user.email ?? null);
         loadData(session.user.id);
       } else {
         setUserId(null);
+        setUserEmail(null);
         setExpenses([]);
         setIncomes([]);
         setLoans([]);
@@ -270,6 +281,13 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       authListener.subscription.unsubscribe();
     };
   }, [supabase, loadData]);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUserId(null);
+    setUserEmail(null);
+    window.location.href = '/login';
+  };
 
   const ensureCategory = async (name: string): Promise<string> => {
     const existing = categoriesMap.find(c => c.name.toLowerCase() === name.toLowerCase());
@@ -461,13 +479,25 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const addLoan = async (loanData: { personName: string; amountLent: number; dateLent: string; channel: string; note: string; avatarUrl?: string }) => {
+  const addLoan = async (loanData: {
+    personName: string;
+    amountLent: number;
+    dateLent: string;
+    channel: string;
+    note: string;
+    avatarUrl?: string;
+    type?: 'lent' | 'loan';
+  }) => {
     if (!userId) {
-      showToast('Please sign in to record lending');
+      showToast('Please sign in to record a loan or lent entry');
       return;
     }
     try {
+      const isLoan = loanData.type === 'loan';
+      const cleanUserNote = (loanData.note || '').replace(/^\[(LOAN|LENT)\]\s*/i, '').trim();
+      const prefixedNote = isLoan ? `[LOAN] ${cleanUserNote}` : `[LENT] ${cleanUserNote}`;
       const lv = normalizeLentVia(loanData.channel);
+
       const { data, error } = await supabase
         .from('lending')
         .insert({
@@ -476,7 +506,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           original_amount: loanData.amountLent,
           lent_via: lv,
           lent_date: loanData.dateLent || new Date().toISOString().split('T')[0],
-          note: loanData.note || null,
+          note: prefixedNote,
           status: 'pending',
         })
         .select('*, repayments(*)')
@@ -492,7 +522,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         remaining: Number(data.original_amount),
         dateLent: data.lent_date,
         channel: data.lent_via,
-        note: data.note || '',
+        note: cleanUserNote,
+        type: isLoan ? 'loan' : 'lent',
         status: 'pending',
         avatarUrl: loanData.avatarUrl || '',
         repayments: [],
@@ -500,15 +531,79 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
 
       setLoans(prev => [newLoan, ...prev]);
-      showToast(`Recorded loan of ${currency}${loanData.amountLent.toFixed(2)} to ${loanData.personName}`);
+      showToast(`Recorded ${isLoan ? 'loan' : 'lent'} of ${currency}${loanData.amountLent.toFixed(2)} to ${loanData.personName}`);
     } catch (err: any) {
-      showToast(err.message || 'Failed to save loan');
+      showToast(err.message || 'Failed to save record');
+    }
+  };
+
+  const updateLoan = async (
+    id: string,
+    updated: {
+      personName: string;
+      amountLent: number;
+      dateLent: string;
+      channel: string;
+      note: string;
+      type?: 'lent' | 'loan';
+    }
+  ) => {
+    if (!userId) return;
+    try {
+      const isLoan = updated.type === 'loan';
+      const cleanUserNote = (updated.note || '').replace(/^\[(LOAN|LENT)\]\s*/i, '').trim();
+      const prefixedNote = isLoan ? `[LOAN] ${cleanUserNote}` : `[LENT] ${cleanUserNote}`;
+      const lv = normalizeLentVia(updated.channel);
+
+      const { error } = await supabase
+        .from('lending')
+        .update({
+          person_name: updated.personName.trim(),
+          original_amount: updated.amountLent,
+          lent_via: lv,
+          lent_date: updated.dateLent,
+          note: prefixedNote,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setLoans(prev => prev.map(l => {
+        if (l.id !== id) return l;
+        const remaining = Math.max(0, updated.amountLent - l.amountReceived);
+        let st: 'pending' | 'partial' | 'settled' = 'pending';
+        if (remaining <= 0) st = 'settled';
+        else if (l.amountReceived > 0) st = 'partial';
+
+        return {
+          ...l,
+          personName: updated.personName.trim(),
+          amountLent: updated.amountLent,
+          dateLent: updated.dateLent,
+          channel: updated.channel as any,
+          note: cleanUserNote,
+          type: updated.type || 'lent',
+          remaining,
+          status: st,
+        };
+      }));
+
+      showToast(`Updated ${isLoan ? 'loan' : 'lent'} record for ${updated.personName}`);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update record');
     }
   };
 
   const recordLoanRepayment = async (loanId: string, payment: { amount: number; date: string; method: string; note?: string }) => {
     if (!userId) return;
     try {
+      const targetLoan = loans.find(l => l.id === loanId);
+      const isLoanType = targetLoan?.type === 'loan';
+      const defaultRepayNote = isLoanType
+        ? `Loan return on ${payment.date || new Date().toISOString().split('T')[0]}`
+        : `Lent return on ${payment.date || new Date().toISOString().split('T')[0]}`;
+
       const rv = normalizeLentVia(payment.method);
       const { data, error } = await supabase
         .from('repayments')
@@ -518,12 +613,17 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           amount: payment.amount,
           received_via: rv,
           date: payment.date || new Date().toISOString().split('T')[0],
-          note: payment.note || null,
+          note: payment.note || defaultRepayNote,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.message && error.message.includes('lending_status')) {
+          showToast('Database Error: Run 20260913_fix_lending_status_trigger.sql in Supabase SQL editor');
+        }
+        throw error;
+      }
 
       setLoans(prev => prev.map(l => {
         if (l.id !== loanId) return l;
@@ -549,7 +649,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         };
       }));
 
-      showToast(`Recorded repayment of ${currency}${payment.amount.toFixed(2)}!`);
+      showToast(`Recorded ${isLoanType ? 'loan return' : 'repayment'} of ${currency}${payment.amount.toFixed(2)}!`);
     } catch (err: any) {
       showToast(err.message || 'Failed to record repayment');
     }
@@ -750,6 +850,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         categoryBreakdown,
         incomeSourceBreakdown,
         loanMetrics,
+        userEmail,
+        logout,
         addExpense,
         editExpense,
         deleteExpense,
@@ -757,6 +859,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         editIncome,
         deleteIncome,
         addLoan,
+        updateLoan,
         recordLoanRepayment,
         deleteLoan,
         customCategories,

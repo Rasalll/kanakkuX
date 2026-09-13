@@ -152,7 +152,7 @@ begin
     new.due_date = new.lent_date + new.duration_days;
   end if;
   if new.status in ('pending', 'overdue') then
-    new.status = case when new.due_date < current_date then 'overdue' else 'pending' end;
+    new.status = (case when new.due_date < current_date then 'overdue'::public.lending_status else 'pending'::public.lending_status end);
   end if;
   return new;
 end;
@@ -195,12 +195,12 @@ declare
   target_lending_id uuid := coalesce(new.lending_id, old.lending_id);
 begin
   update public.lending l
-  set status = case
-      when coalesce((select sum(r.amount) from public.repayments r where r.lending_id = l.id), 0) >= l.original_amount then 'paid'
-      when coalesce((select sum(r.amount) from public.repayments r where r.lending_id = l.id), 0) > 0 then 'partially_paid'
-      when l.due_date < current_date then 'overdue'
-      else 'pending'
-    end,
+  set status = (case
+      when coalesce((select sum(r.amount) from public.repayments r where r.lending_id = l.id), 0) >= l.original_amount then 'paid'::public.lending_status
+      when coalesce((select sum(r.amount) from public.repayments r where r.lending_id = l.id), 0) > 0 then 'partially_paid'::public.lending_status
+      when l.due_date < current_date then 'overdue'::public.lending_status
+      else 'pending'::public.lending_status
+    end),
     updated_at = timezone('utc', now())
   where l.id = target_lending_id;
   if tg_op = 'DELETE' then

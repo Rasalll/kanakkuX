@@ -14,6 +14,8 @@ export const Header: React.FC = () => {
     setCurrency,
     openReportModal,
     showToast,
+    userEmail,
+    logout,
   } = useLedger();
 
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
@@ -147,12 +149,18 @@ export const Header: React.FC = () => {
             {showProfileMenu && (
               <div className="absolute right-0 mt-2 w-64 bg-surface-container-lowest rounded-xl p-3 shadow-xl border border-surface-container z-50 animate-in fade-in zoom-in-95">
                 <div className="flex items-center gap-2.5 pb-2.5 border-b border-surface-container">
-                  <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold">
-                    KX
+                  <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm">
+                    {userEmail ? userEmail.slice(0, 2).toUpperCase() : 'KX'}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-label-md text-on-surface font-bold truncate">User</span>
-                    <span className="font-body-sm text-outline text-[11px] truncate">Synced to Supabase</span>
+                    <span className="font-label-md text-on-surface font-bold truncate">
+                      {userEmail ? userEmail.split('@')[0] : 'Personal Ledger'}
+                    </span>
+                    {userEmail && (
+                      <span className="font-body-sm text-outline text-[11px] truncate">
+                        {userEmail}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -182,6 +190,19 @@ export const Header: React.FC = () => {
                     </div>
                     <span className="font-bold text-primary">{currency}</span>
                   </button>
+
+                  <div className="pt-1 mt-1 border-t border-surface-container">
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        logout();
+                      }}
+                      className="flex items-center gap-2 px-2 py-2 rounded-lg text-error hover:bg-error-container/30 font-label-md text-left transition-colors w-full"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">logout</span>
+                      <span className="font-bold">Log out</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

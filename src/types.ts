@@ -38,6 +38,7 @@ export interface LoanItem {
   id: string;
   personName: string;
   avatarUrl?: string;
+  type?: 'lent' | 'loan';
   amountLent: number;
   amountReceived: number;
   remaining: number;

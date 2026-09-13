@@ -18,6 +18,7 @@ export const QuickAddModal: React.FC = () => {
   } = useLedger();
 
   const [tab, setTab] = useState<'expense' | 'income' | 'lent'>('expense');
+  const [lentMode, setLentMode] = useState<'lent' | 'loan'>('lent');
   const [amount, setAmount] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -31,6 +32,7 @@ export const QuickAddModal: React.FC = () => {
   useEffect(() => {
     if (quickAddModalOpen) {
       setTab(quickAddDefaultTab);
+      setLentMode('lent');
       setAmount('');
       setNote('');
       setSource('');
@@ -82,12 +84,14 @@ export const QuickAddModal: React.FC = () => {
         date: date || new Date().toISOString().split('T')[0],
       });
     } else {
+      const isLoan = lentMode === 'loan';
       await addLoan({
-        personName: note.trim() || 'Friend',
+        personName: note.trim() || (isLoan ? 'Lender' : 'Friend'),
         amountLent: val,
         dateLent: date || new Date().toISOString().split('T')[0],
         channel: paymentMethod,
-        note: `Loan disbursed via ${paymentMethod}`,
+        note: isLoan ? `Loan on ${date || new Date().toISOString().split('T')[0]}` : `Lent on ${date || new Date().toISOString().split('T')[0]}`,
+        type: lentMode,
       });
     }
 
@@ -105,7 +109,7 @@ export const QuickAddModal: React.FC = () => {
   const getTitle = () => {
     if (tab === 'expense') return 'Log New Expense';
     if (tab === 'income') return 'Add New Income Stream';
-    return 'Register Lent Loan';
+    return lentMode === 'loan' ? 'Register Loan Taken' : 'Register Money Lent';
   };
 
   const allCategories = Array.from(new Set(['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Subs', ...customCategories]));
@@ -145,10 +149,39 @@ export const QuickAddModal: React.FC = () => {
                   : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
-              {t === 'lent' ? 'Loan Out' : t}
+              {t === 'lent' ? 'Lent / Loan' : t}
             </button>
           ))}
         </div>
+
+        {tab === 'lent' && (
+          <div className="flex gap-2 p-1 bg-surface-container-low rounded-xl">
+            <button
+              type="button"
+              onClick={() => setLentMode('lent')}
+              className={`flex-1 py-1.5 rounded-lg font-label-sm text-xs font-semibold flex items-center justify-center gap-1 transition-all ${
+                lentMode === 'lent'
+                  ? 'bg-primary text-on-primary shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
+              <span>Lent (I Gave)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLentMode('loan')}
+              className={`flex-1 py-1.5 rounded-lg font-label-sm text-xs font-semibold flex items-center justify-center gap-1 transition-all ${
+                lentMode === 'loan'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
+              <span>Loan (Borrowed)</span>
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           <div>
@@ -297,12 +330,12 @@ export const QuickAddModal: React.FC = () => {
 
             <div>
               <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">
-                {tab === 'lent' ? 'Borrower Name' : 'Memo'}
+                {tab === 'lent' ? (lentMode === 'loan' ? "Lender's Name" : "Borrower's Name") : 'Memo'}
               </label>
               <div className="flex items-center bg-surface-container rounded-xl px-3 py-2 border border-surface-container-high">
                 <input
                   type="text"
-                  placeholder={tab === 'lent' ? 'Name' : 'Note'}
+                  placeholder={tab === 'lent' ? (lentMode === 'loan' ? 'Lender Name' : 'Borrower Name') : 'Note'}
                   value={note}
                   onChange={e => setNote(e.target.value)}
                   className="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none text-xs"
