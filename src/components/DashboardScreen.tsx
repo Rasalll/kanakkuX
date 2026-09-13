@@ -13,8 +13,6 @@ export const DashboardScreen: React.FC = () => {
     burnConsumedPercent,
     burnCushionLeft,
     loanMetrics,
-    openQuickAdd,
-    openReportModal,
     setActiveTab,
     currency,
     expenses,
@@ -240,61 +238,6 @@ export const DashboardScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* Quick Dispatch Bar */}
-      <section className="flex flex-col gap-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
-            Quick Dispatch
-          </span>
-          <span className="font-label-sm text-label-sm text-primary font-semibold">Fintech Shortcuts</span>
-        </div>
-        <div className="grid grid-cols-4 gap-2 sm:gap-3">
-          <button
-            className="min-h-[64px] rounded-2xl bg-surface-container-lowest p-2.5 flex flex-col items-center justify-center gap-1 shadow-xs border border-surface-container/50 active:scale-95 transition-all text-on-surface hover:bg-surface-container-high"
-            onClick={() => openQuickAdd('expense')}
-            type="button"
-          >
-            <div className="w-7 h-7 rounded-full bg-error-container text-error flex items-center justify-center">
-              <span className="material-symbols-outlined text-[16px]">remove</span>
-            </div>
-            <span className="font-label-sm text-label-sm font-semibold">Expense</span>
-          </button>
-
-          <button
-            className="min-h-[64px] rounded-2xl bg-surface-container-lowest p-2.5 flex flex-col items-center justify-center gap-1 shadow-xs border border-surface-container/50 active:scale-95 transition-all text-on-surface hover:bg-surface-container-high"
-            onClick={() => openQuickAdd('income')}
-            type="button"
-          >
-            <div className="w-7 h-7 rounded-full bg-primary-fixed text-primary flex items-center justify-center">
-              <span className="material-symbols-outlined text-[16px]">add</span>
-            </div>
-            <span className="font-label-sm text-label-sm font-semibold">Income</span>
-          </button>
-
-          <button
-            className="min-h-[64px] rounded-2xl bg-surface-container-lowest p-2.5 flex flex-col items-center justify-center gap-1 shadow-xs border border-surface-container/50 active:scale-95 transition-all text-on-surface hover:bg-surface-container-high"
-            onClick={() => openQuickAdd('lent')}
-            type="button"
-          >
-            <div className="w-7 h-7 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center">
-              <span className="material-symbols-outlined text-[16px]">volunteer_activism</span>
-            </div>
-            <span className="font-label-sm text-label-sm font-semibold">Lend</span>
-          </button>
-
-          <button
-            className="min-h-[64px] rounded-2xl bg-surface-container-lowest p-2.5 flex flex-col items-center justify-center gap-1 shadow-xs border border-surface-container/50 active:scale-95 transition-all text-on-surface hover:bg-surface-container-high"
-            onClick={openReportModal}
-            type="button"
-          >
-            <div className="w-7 h-7 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center">
-              <span className="material-symbols-outlined text-[16px]">ios_share</span>
-            </div>
-            <span className="font-label-sm text-label-sm font-semibold">Report</span>
-          </button>
-        </div>
-      </section>
-
       {/* Spend Velocity & Monthly Cap Tracker */}
       <section className="rounded-2xl bg-surface-container-lowest p-4 sm:p-5 shadow-xs border border-surface-container/50 flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
@@ -347,7 +290,7 @@ export const DashboardScreen: React.FC = () => {
               </div>
               <p className="font-label-lg text-on-surface font-semibold">No recent activity</p>
               <p className="font-body-sm text-on-surface-variant max-w-xs">
-                Use Quick Dispatch above to record your first expense, income, or loan.
+                Use the navigation buttons below to record your first expense, income, or loan.
               </p>
             </div>
           ) : (
