@@ -1,4 +1,4 @@
-export type TabType = 'dashboard' | 'expenses' | 'income' | 'owed';
+export type TabType = 'dashboard' | 'expenses' | 'income' | 'owed' | 'ask';
 
 export interface ExpenseItem {
   id: string;

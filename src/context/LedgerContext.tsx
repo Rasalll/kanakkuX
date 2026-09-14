@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { ExpenseItem, IncomeItem, LoanItem, TabType } from '../types';
 import { createClient } from '@/lib/supabase/client';
 import { PaymentMethod, LentVia } from '@/lib/types';
@@ -117,7 +118,29 @@ function normalizeLentVia(channel: string): LentVia {
 
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const supabase = useMemo(() => createClient(), []);
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const pathname = usePathname();
+  const router = useRouter();
+  const [activeTab, setActiveTabState] = useState<TabType>(pathname === '/ask' ? 'ask' : 'dashboard');
+
+  const setActiveTab = useCallback(
+    (tab: TabType) => {
+      setActiveTabState(tab);
+      if (tab === 'ask') {
+        if (pathname !== '/ask') router.push('/ask');
+      } else if (pathname === '/ask') {
+        router.push('/dashboard');
+      }
+    },
+    [pathname, router]
+  );
+
+  useEffect(() => {
+    if (pathname === '/ask') {
+      setActiveTabState('ask');
+      return;
+    }
+    setActiveTabState(prev => (prev === 'ask' ? 'dashboard' : prev));
+  }, [pathname]);
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [incomes, setIncomes] = useState<IncomeItem[]>([]);
   const [loans, setLoans] = useState<LoanItem[]>([]);

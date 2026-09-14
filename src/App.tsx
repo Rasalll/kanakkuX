@@ -6,6 +6,7 @@ import { DashboardScreen } from './components/DashboardScreen';
 import { ExpensesScreen } from './components/ExpensesScreen';
 import { IncomeScreen } from './components/IncomeScreen';
 import { OwedScreen } from './components/OwedScreen';
+import { AskKanakkuXScreen } from './components/AskKanakkuXScreen';
 import { QuickAddModal } from './components/QuickAddModal';
 import { ReportModal } from './components/ReportModal';
 import { Toast } from './components/Toast';
@@ -13,6 +14,7 @@ import { Toast } from './components/Toast';
 const MainLayout: React.FC = () => {
   const { activeTab } = useLedger();
   const [deviceFrameMode, setDeviceFrameMode] = useState<boolean>(false);
+  const isAsk = activeTab === 'ask';
 
   return (
     <div className="min-h-screen bg-surface text-on-surface flex flex-col items-center">
@@ -45,19 +47,28 @@ const MainLayout: React.FC = () => {
 
       {/* Main Content Shell */}
       <div
-        className={`w-full flex flex-col min-h-screen relative transition-all duration-300 ${
+        className={`w-full flex flex-col relative transition-all duration-300 ${
+          isAsk ? 'h-dvh max-h-dvh' : 'min-h-screen'
+        } ${
           deviceFrameMode
             ? 'max-w-md my-4 rounded-3xl shadow-2xl border-4 border-surface-container-highest overflow-hidden bg-surface'
             : 'max-w-md md:max-w-3xl lg:max-w-4xl xl:max-w-5xl'
         }`}
       >
-        <Header />
+        {!isAsk && <Header />}
 
-        <main className="flex-1 w-full px-4 sm:px-6 md:px-8 py-5 pb-28 md:pb-12">
+        <main
+          className={
+            isAsk
+              ? 'flex-1 min-h-0 w-full flex flex-col overflow-hidden'
+              : 'flex-1 w-full px-4 sm:px-6 md:px-8 py-5 pb-28 md:pb-12'
+          }
+        >
           {activeTab === 'dashboard' && <DashboardScreen />}
           {activeTab === 'expenses' && <ExpensesScreen />}
           {activeTab === 'income' && <IncomeScreen />}
           {activeTab === 'owed' && <OwedScreen />}
+          {activeTab === 'ask' && <AskKanakkuXScreen />}
         </main>
 
         <Navigation />

@@ -43,6 +43,7 @@ export async function middleware(request: NextRequest) {
   // If not authenticated and trying to access a protected route → redirect to /login
   const isProtectedRoute =
     pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/ask') ||
     pathname.startsWith('/expenses') ||
     pathname.startsWith('/income') ||
     pathname.startsWith('/lending') ||

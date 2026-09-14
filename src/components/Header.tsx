@@ -124,6 +124,16 @@ export const Header: React.FC = () => {
           </div>
 
           <button
+            onClick={() => setActiveTab('ask')}
+            className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors"
+            title="Ask KanakkuX"
+            type="button"
+            aria-label="Ask KanakkuX"
+          >
+            <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
+          </button>
+
+          <button
             onClick={() => {
               const nextCurr = currency === '$' ? '₹' : '$';
               setCurrency(nextCurr);
