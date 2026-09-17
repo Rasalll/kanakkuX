@@ -19,7 +19,6 @@ export const DashboardScreen: React.FC = () => {
     expenses,
     incomes,
     loans,
-    totalTransactionsCount
   } = useLedger();
 
   const money = (amount: number, digits = 2) =>
@@ -253,7 +252,7 @@ export const DashboardScreen: React.FC = () => {
             className="font-label-md text-label-md text-primary font-semibold hover:underline min-h-[40px] inline-flex items-center"
             type="button"
           >
-            See All ({totalTransactionsCount})
+            See All
           </button>
         </div>
 
