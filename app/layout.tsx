@@ -18,7 +18,13 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    apple: '/logos/logo mark.png',
+    icon: [
+      { url: '/logos/logo mark.png', type: 'image/png' },
+    ],
+    shortcut: '/logos/logo mark.png',
+    apple: [
+      { url: '/logos/logo mark.png', type: 'image/png' },
+    ],
   },
 };
 
