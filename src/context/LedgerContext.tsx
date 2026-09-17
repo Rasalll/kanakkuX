@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { ExpenseItem, IncomeItem, LoanItem, TabType } from '../types';
 import { createClient } from '@/lib/supabase/client';
 import { PaymentMethod, LentVia } from '@/lib/types';
@@ -83,6 +83,7 @@ interface LedgerContextType {
   toast: { message: string; visible: boolean };
   showToast: (msg: string) => void;
   isLoading: boolean;
+  isSaving: boolean;
 }
 
 const LedgerContext = createContext<LedgerContextType | undefined>(undefined);
@@ -119,27 +120,14 @@ function normalizeLentVia(channel: string): LentVia {
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const supabase = useMemo(() => createClient(), []);
   const pathname = usePathname();
-  const router = useRouter();
   const [activeTab, setActiveTabState] = useState<TabType>(pathname === '/ask' ? 'ask' : 'dashboard');
 
-  const setActiveTab = useCallback(
-    (tab: TabType) => {
-      setActiveTabState(tab);
-      if (tab === 'ask') {
-        if (pathname !== '/ask') router.push('/ask');
-      } else if (pathname === '/ask') {
-        router.push('/dashboard');
-      }
-    },
-    [pathname, router]
-  );
+  const setActiveTab = useCallback((tab: TabType) => {
+    setActiveTabState(tab);
+  }, []);
 
   useEffect(() => {
-    if (pathname === '/ask') {
-      setActiveTabState('ask');
-      return;
-    }
-    setActiveTabState(prev => (prev === 'ask' ? 'dashboard' : prev));
+    if (pathname === '/ask') setActiveTabState('ask');
   }, [pathname]);
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [incomes, setIncomes] = useState<IncomeItem[]>([]);
@@ -150,9 +138,23 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const savingRef = useRef(false);
+
+  const withSave = useCallback(async (fn: () => Promise<void>) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setIsSaving(true);
+    try {
+      await fn();
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
+    }
+  }, []);
 
   const [currentMonthIndex, setCurrentMonthIndex] = useState<number>(MONTHS_LIST.length - 1);
-  const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(false);
+  const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(true);
   const [currency, setCurrency] = useState<string>('₹');
 
   const [quickAddModalOpen, setQuickAddModalOpen] = useState(false);
@@ -165,6 +167,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTimeout(() => {
       setToast(prev => ({ ...prev, visible: false }));
     }, 2800);
+  }, []);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('kanakkux_hide_balance');
+    if (stored === '0') setIsBalanceHidden(false);
   }, []);
 
   const loadData = useCallback(async (uid: string) => {
@@ -352,6 +359,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const addExpense = async (expense: Omit<ExpenseItem, 'id' | 'createdAt'>) => {
+    await withSave(async () => {
     if (!userId) {
       showToast('Please sign in to save expenses');
       return;
@@ -396,9 +404,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err: any) {
       showToast(err.message || 'Failed to save expense');
     }
+    });
   };
 
   const editExpense = async (id: string, updates: Partial<ExpenseItem>) => {
+    await withSave(async () => {
     try {
       const payload: any = { updated_at: new Date().toISOString() };
       if (updates.amount !== undefined) payload.amount = updates.amount;
@@ -416,6 +426,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err: any) {
       showToast(err.message || 'Failed to update expense');
     }
+    });
   };
 
   const deleteExpense = async (id: string) => {
@@ -430,6 +441,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const addIncome = async (income: Omit<IncomeItem, 'id' | 'createdAt'>) => {
+    await withSave(async () => {
     if (!userId) {
       showToast('Please sign in to save income');
       return;
@@ -470,9 +482,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err: any) {
       showToast(err.message || 'Failed to save income');
     }
+    });
   };
 
   const editIncome = async (id: string, updates: Partial<IncomeItem>) => {
+    await withSave(async () => {
     try {
       const payload: any = { updated_at: new Date().toISOString() };
       if (updates.amount !== undefined) payload.amount = updates.amount;
@@ -489,6 +503,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err: any) {
       showToast(err.message || 'Failed to update income');
     }
+    });
   };
 
   const deleteIncome = async (id: string) => {
@@ -511,6 +526,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     avatarUrl?: string;
     type?: 'lent' | 'loan';
   }) => {
+    await withSave(async () => {
     if (!userId) {
       showToast('Please sign in to record a loan or lent entry');
       return;
@@ -558,6 +574,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err: any) {
       showToast(err.message || 'Failed to save record');
     }
+    });
   };
 
   const updateLoan = async (
@@ -572,6 +589,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   ) => {
     if (!userId) return;
+    await withSave(async () => {
     try {
       const isLoan = updated.type === 'loan';
       const cleanUserNote = (updated.note || '').replace(/^\[(LOAN|LENT)\]\s*/i, '').trim();
@@ -616,10 +634,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err: any) {
       showToast(err.message || 'Failed to update record');
     }
+    });
   };
 
   const recordLoanRepayment = async (loanId: string, payment: { amount: number; date: string; method: string; note?: string }) => {
     if (!userId) return;
+    await withSave(async () => {
     try {
       const targetLoan = loans.find(l => l.id === loanId);
       const isLoanType = targetLoan?.type === 'loan';
@@ -676,6 +696,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err: any) {
       showToast(err.message || 'Failed to record repayment');
     }
+    });
   };
 
   const deleteLoan = async (id: string) => {
@@ -723,7 +744,13 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const toggleBalanceHidden = () => {
-    setIsBalanceHidden(prev => !prev);
+    setIsBalanceHidden(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kanakkux_hide_balance', next ? '1' : '0');
+      }
+      return next;
+    });
   };
 
   const totalMonthlySpend = useMemo(() => {
@@ -899,6 +926,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         toast,
         showToast,
         isLoading,
+        isSaving,
       }}
     >
       {children}

@@ -3,6 +3,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
+const LOGO_MARK = '/logos/logo mark.png';
+const LOGO_WORDMARK = '/logos/KanakkuX logo.png';
+
 export default function LoginPage() {
   const supabase = useMemo(() => createClient(), []);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -125,21 +128,14 @@ export default function LoginPage() {
     <div className="min-h-screen bg-surface text-on-surface flex flex-col selection:bg-primary selection:text-on-primary">
       <header className="w-full max-w-md mx-auto pt-6 pb-2 px-5 flex items-center justify-center">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm font-bold text-sm">KX</div>
-          <span className="font-bold text-on-surface tracking-tight text-xl">kanakkuX</span>
+          <img src={LOGO_WORDMARK} alt="KanakkuX" className="h-8 object-contain max-w-[180px]" />
         </div>
       </header>
 
       <main className="w-full max-w-md mx-auto px-5 py-4 flex-1 flex flex-col justify-center gap-5">
         <div className="flex flex-col items-center text-center gap-2">
-          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 mb-1">
-            <svg className="w-9 h-9" fill="none" viewBox="0 0 100 100">
-              <circle cx="38" cy="42" r="22" stroke="#FFFFFF" strokeWidth="9"/>
-              <path d="M38 68V88" stroke="#9CF2E8" strokeLinecap="round" strokeWidth="9"/>
-              <path d="M72 26V82" stroke="#9CF2E8" strokeLinecap="round" strokeWidth="9"/>
-              <path d="M52 38L70 28" stroke="#9CF2E8" strokeLinecap="round" strokeWidth="9"/>
-              <path d="M52 74L70 64" stroke="#9CF2E8" strokeLinecap="round" strokeWidth="9"/>
-            </svg>
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-1 drop-shadow-xl">
+            <img src={LOGO_MARK} alt="KanakkuX" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-on-surface tracking-tight">
             {mode === 'signin' ? 'Welcome back' : 'Create account'}

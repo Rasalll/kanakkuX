@@ -17,6 +17,7 @@ export const IncomeScreen: React.FC = () => {
     setCurrency,
     sourcesList,
     addCustomSource,
+    isSaving,
   } = useLedger();
 
   const [isFormOpen, setIsFormOpen] = useState(true);
@@ -26,7 +27,6 @@ export const IncomeScreen: React.FC = () => {
   const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
   const [memoInput, setMemoInput] = useState('');
   const [editingIncomeId, setEditingIncomeId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [showAddSource, setShowAddSource] = useState(false);
   const [newSourceName, setNewSourceName] = useState('');
 
@@ -84,6 +84,7 @@ export const IncomeScreen: React.FC = () => {
   }, [filteredIncomes]);
 
   const handleSaveIncome = async () => {
+    if (isSaving) return;
     const cleanAmount = amountInput.replace(/[^0-9.]/g, '');
     const val = Math.abs(parseFloat(cleanAmount) || 0);
     if (!val) {
@@ -91,34 +92,29 @@ export const IncomeScreen: React.FC = () => {
       return;
     }
 
-    setIsSaving(true);
-    try {
-      if (editingIncomeId) {
-        await editIncome(editingIncomeId, {
-          title: memoInput.trim() || `${selectedSource} Inflow`,
-          amount: val,
-          source: selectedSource,
-          destination: selectedDest,
-          date: dateInput,
-          note: memoInput.trim(),
-        });
-        setEditingIncomeId(null);
-      } else {
-        await addIncome({
-          title: memoInput.trim() || `${selectedSource} Inflow`,
-          amount: val,
-          source: selectedSource,
-          destination: selectedDest,
-          date: dateInput || new Date().toISOString().split('T')[0],
-          note: memoInput.trim() || `${selectedSource} payment`,
-        });
-      }
-
-      setAmountInput('');
-      setMemoInput('');
-    } finally {
-      setIsSaving(false);
+    if (editingIncomeId) {
+      await editIncome(editingIncomeId, {
+        title: memoInput.trim() || `${selectedSource} Inflow`,
+        amount: val,
+        source: selectedSource,
+        destination: selectedDest,
+        date: dateInput,
+        note: memoInput.trim(),
+      });
+      setEditingIncomeId(null);
+    } else {
+      await addIncome({
+        title: memoInput.trim() || `${selectedSource} Inflow`,
+        amount: val,
+        source: selectedSource,
+        destination: selectedDest,
+        date: dateInput || new Date().toISOString().split('T')[0],
+        note: memoInput.trim() || `${selectedSource} payment`,
+      });
     }
+
+    setAmountInput('');
+    setMemoInput('');
   };
 
   const handleCreateSource = async () => {
@@ -389,14 +385,14 @@ export const IncomeScreen: React.FC = () => {
             <button
               type="submit"
               disabled={isSaving}
-              className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg font-bold flex items-center justify-center gap-2 shadow-md active:scale-98 hover:bg-primary-container transition-all disabled:opacity-60"
+              className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg font-bold flex items-center justify-center gap-2 shadow-md active:scale-98 hover:bg-primary-container transition-all disabled:opacity-60 disabled:pointer-events-none disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[20px]">
                 {editingIncomeId ? 'check' : 'add'}
               </span>
               <span>
                 {isSaving
-                  ? 'Saving to Supabase...'
+                  ? 'Saving...'
                   : editingIncomeId
                   ? 'Update Income'
                   : 'Save Income'}

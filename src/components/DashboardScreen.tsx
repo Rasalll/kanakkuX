@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLedger } from '../context/LedgerContext';
+import { LogoMark } from './BrandLogo';
 
 export const DashboardScreen: React.FC = () => {
   const {
@@ -18,9 +19,11 @@ export const DashboardScreen: React.FC = () => {
     expenses,
     incomes,
     loans,
+    totalTransactionsCount
   } = useLedger();
 
-  const totalTransactionsCount = expenses.length + incomes.length + loans.length;
+  const money = (amount: number, digits = 2) =>
+    `${currency}${amount.toLocaleString('en-IN', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 
   const recentActivities = React.useMemo(() => {
     const list: Array<{
@@ -129,7 +132,7 @@ export const DashboardScreen: React.FC = () => {
         <div className="relative z-10 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="font-label-md text-label-md text-on-primary-container tracking-wider flex items-center gap-1.5 font-semibold">
-              <span className="material-symbols-outlined text-[17px]">account_balance_wallet</span>
+              <LogoMark className="h-5 w-5" alt="" />
               NET LIQUID BALANCE
             </span>
             <button
@@ -182,8 +185,7 @@ export const DashboardScreen: React.FC = () => {
           </div>
           <div>
             <p className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              {currency}{totalMonthlyIncome.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              <span className="text-body-sm text-on-surface-variant font-normal">.00</span>
+              {money(totalMonthlyIncome, 0)}<span className="text-body-sm text-on-surface-variant font-normal">.00</span>
             </p>
             <p className="font-label-sm text-label-sm text-primary mt-0.5 font-medium">This month</p>
           </div>
@@ -202,8 +204,7 @@ export const DashboardScreen: React.FC = () => {
           </div>
           <div>
             <p className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              {currency}{totalMonthlySpend.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              <span className="text-body-sm text-on-surface-variant font-normal">.00</span>
+              {money(totalMonthlySpend, 0)}<span className="text-body-sm text-on-surface-variant font-normal">.00</span>
             </p>
             <p className="font-label-sm text-label-sm text-error mt-0.5 font-medium">
               {Math.round(burnConsumedPercent)}% cap reached
@@ -228,7 +229,7 @@ export const DashboardScreen: React.FC = () => {
                 </span>
               </div>
               <p className="font-headline-sm text-headline-sm text-on-surface font-bold mt-0.5">
-                {currency}{totalAmountOwed.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {money(totalAmountOwed, 2)}
               </p>
             </div>
           </div>
@@ -238,33 +239,7 @@ export const DashboardScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* Spend Velocity & Monthly Cap Tracker */}
-      <section className="rounded-2xl bg-surface-container-lowest p-4 sm:p-5 shadow-xs border border-surface-container/50 flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-primary-container animate-ping"></div>
-            <span className="font-label-md text-label-md text-on-surface font-semibold">Monthly Burn Rate</span>
-          </div>
-          <span className="font-label-md text-label-md text-on-surface-variant font-bold">
-            {currency}{totalMonthlySpend.toLocaleString('en-IN', { minimumFractionDigits: 0 })} / {currency}{burnCap.toLocaleString('en-IN')}
-          </span>
-        </div>
-        
-        {/* Progress Track */}
-        <div className="w-full h-3 rounded-full bg-surface-container-highest overflow-hidden relative">
-          <div
-            className="h-full bg-gradient-to-r from-primary to-secondary-container rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${burnConsumedPercent}%` }}
-          ></div>
-        </div>
 
-        <div className="flex items-center justify-between text-on-surface-variant text-label-sm">
-          <span>{burnConsumedPercent.toFixed(1)}% consumed</span>
-          <span className="text-primary font-semibold">
-            {currency}{burnCushionLeft.toLocaleString('en-IN', { minimumFractionDigits: 0 })} cushion left
-          </span>
-        </div>
-      </section>
 
       {/* Recent Ledger Activity Feed */}
       <section className="flex flex-col gap-2.5">
@@ -320,7 +295,7 @@ export const DashboardScreen: React.FC = () => {
                 </div>
                 <div className="flex flex-col items-end shrink-0 pl-2">
                   <span className={`font-headline-sm text-headline-sm font-bold ${item.amountColor}`}>
-                    {item.prefix}{currency}{item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {`${item.prefix}${currency}${item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </span>
                   <span className="font-label-sm text-label-sm text-on-surface-variant">
                     {item.subtitle}

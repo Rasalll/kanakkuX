@@ -14,6 +14,7 @@ export const OwedScreen: React.FC = () => {
     totalAmountOwed,
     loanMetrics,
     currency,
+    isSaving,
   } = useLedger();
 
   // Add form states
@@ -53,6 +54,7 @@ export const OwedScreen: React.FC = () => {
 
   const handleSaveLoan = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     const cleanAmount = amountLent.replace(/[^0-9.]/g, '');
     const val = parseFloat(cleanAmount);
     if (!personName.trim() || !val || isNaN(val) || val <= 0) {
@@ -89,6 +91,7 @@ export const OwedScreen: React.FC = () => {
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (!editingLoan) return;
 
     const clean = editAmount.replace(/[^0-9.]/g, '');
@@ -110,8 +113,9 @@ export const OwedScreen: React.FC = () => {
     setEditingLoan(null);
   };
 
-  const handleConfirmRepayment = (e: React.FormEvent) => {
+  const handleConfirmRepayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (!activeLoanForRepay) return;
 
     const cleanAmount = repayAmount.replace(/[^0-9.]/g, '');
@@ -126,7 +130,7 @@ export const OwedScreen: React.FC = () => {
       ? `Loan return on ${repayDate || new Date().toISOString().split('T')[0]}`
       : `Lent return on ${repayDate || new Date().toISOString().split('T')[0]}`;
 
-    recordLoanRepayment(activeLoanForRepay.id, {
+    await recordLoanRepayment(activeLoanForRepay.id, {
       amount: amt,
       date: repayDate || new Date().toISOString().split('T')[0],
       method: repayMethod,
@@ -346,11 +350,18 @@ export const OwedScreen: React.FC = () => {
             </div>
 
             <button
-              className="mt-1 w-full py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-98 hover:bg-primary-container transition-all"
+              className="mt-1 w-full py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-98 hover:bg-primary-container transition-all disabled:opacity-60 disabled:pointer-events-none disabled:cursor-not-allowed"
               type="submit"
+              disabled={isSaving}
             >
-              <span className="material-symbols-outlined text-[18px]">check</span>
-              <span>{recordType === 'loan' ? 'Save Loan Record' : 'Save Lent Record'}</span>
+              <span className="material-symbols-outlined text-[18px]">{isSaving ? 'hourglass_top' : 'check'}</span>
+              <span>
+                {isSaving
+                  ? 'Saving...'
+                  : recordType === 'loan'
+                    ? 'Save Loan Record'
+                    : 'Save Lent Record'}
+              </span>
             </button>
           </form>
         </section>
@@ -669,9 +680,10 @@ export const OwedScreen: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-full bg-primary text-on-primary font-label-md font-bold hover:bg-primary-container shadow-md transition-all"
+                  disabled={isSaving}
+                  className="flex-1 py-2.5 rounded-full bg-primary text-on-primary font-label-md font-bold hover:bg-primary-container shadow-md transition-all disabled:opacity-60 disabled:pointer-events-none"
                 >
-                  Save Changes
+                  {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -785,12 +797,17 @@ export const OwedScreen: React.FC = () => {
               </div>
 
               <button
-                className="mt-1 w-full py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-98 hover:bg-primary-container transition-all"
+                className="mt-1 w-full py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-98 hover:bg-primary-container transition-all disabled:opacity-60 disabled:pointer-events-none disabled:cursor-not-allowed"
                 type="submit"
+                disabled={isSaving}
               >
-                <span className="material-symbols-outlined text-[18px]">check</span>
+                <span className="material-symbols-outlined text-[18px]">{isSaving ? 'hourglass_top' : 'check'}</span>
                 <span>
-                  {activeLoanForRepay.type === 'loan' ? 'Confirm Loan Return' : 'Confirm Lent Payment'}
+                  {isSaving
+                    ? 'Saving...'
+                    : activeLoanForRepay.type === 'loan'
+                      ? 'Confirm Loan Return'
+                      : 'Confirm Lent Payment'}
                 </span>
               </button>
             </form>

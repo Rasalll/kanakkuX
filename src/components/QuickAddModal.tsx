@@ -15,6 +15,7 @@ export const QuickAddModal: React.FC = () => {
     customCategories,
     sourcesList,
     addCustomSource,
+    isSaving,
   } = useLedger();
 
   const [tab, setTab] = useState<'expense' | 'income' | 'lent'>('expense');
@@ -56,6 +57,7 @@ export const QuickAddModal: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     const cleanAmount = amount.replace(/[^0-9.]/g, '');
     const val = Math.abs(parseFloat(cleanAmount) || 0);
     if (!val) {
@@ -346,10 +348,11 @@ export const QuickAddModal: React.FC = () => {
 
           <button
             type="submit"
-            className="mt-2 w-full py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-98 hover:bg-primary-container transition-all"
+            disabled={isSaving}
+            className="mt-2 w-full py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-98 hover:bg-primary-container transition-all disabled:opacity-60 disabled:pointer-events-none disabled:cursor-not-allowed"
           >
-            <span className="material-symbols-outlined text-[18px]">add_circle</span>
-            <span>Save to Cloud</span>
+            <span className="material-symbols-outlined text-[18px]">{isSaving ? 'hourglass_top' : 'add_circle'}</span>
+            <span>{isSaving ? 'Saving...' : 'Save to Cloud'}</span>
           </button>
         </form>
       </div>

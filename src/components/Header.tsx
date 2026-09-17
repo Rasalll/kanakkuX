@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLedger } from '../context/LedgerContext';
+import { LogoWordmark } from './BrandLogo';
 
 export const Header: React.FC = () => {
   const {
@@ -24,18 +25,8 @@ export const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-30 w-full bg-surface/90 backdrop-blur-md border-b border-surface-container/60 transition-colors">
       <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-xs">
-            <span className="material-symbols-outlined text-on-primary text-[20px]">account_balance_wallet</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface leading-tight">
-              kanakkuX
-            </span>
-            <span className="font-label-sm text-outline text-[11px] leading-tight">
-              Cloud Expense Tracker
-            </span>
-          </div>
+        <div className="flex items-center gap-2 min-w-0">
+          <LogoWordmark className="h-7 sm:h-8 max-w-[160px] sm:max-w-[200px]" />
         </div>
 
         <nav className="hidden md:flex items-center gap-1 bg-surface-container-low p-1 rounded-full border border-surface-container/60">

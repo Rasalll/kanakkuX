@@ -19,6 +19,7 @@ export const ExpensesScreen: React.FC = () => {
     addCustomCategory,
     sourcesList,
     currency,
+    isSaving,
   } = useLedger();
 
   const [periodFilter, setPeriodFilter] = useState<'all' | 'week' | 'month' | 'custom'>('all');
@@ -115,6 +116,7 @@ export const ExpensesScreen: React.FC = () => {
   }, [filteredExpenses]);
 
   const handleSaveExpense = async () => {
+    if (isSaving) return;
     const cleanAmount = amountInput.replace(/[^0-9.]/g, '');
     const amt = Math.abs(parseFloat(cleanAmount) || 0);
     if (!amt) {
@@ -489,11 +491,14 @@ export const ExpensesScreen: React.FC = () => {
 
           <button
             onClick={handleSaveExpense}
-            className="w-full bg-primary-container text-on-primary font-label-lg text-label-lg py-3 rounded-full shadow-lg active:scale-95 hover:bg-primary transition-all flex items-center justify-center gap-2 font-bold"
+            disabled={isSaving}
+            className="w-full bg-primary-container text-on-primary font-label-lg text-label-lg py-3 rounded-full shadow-lg active:scale-95 hover:bg-primary transition-all flex items-center justify-center gap-2 font-bold disabled:opacity-60 disabled:pointer-events-none disabled:cursor-not-allowed"
             type="button"
           >
-            <span className="material-symbols-outlined text-[20px]">check_circle</span>
-            <span>{editingExpenseId ? 'Update Expense' : 'Save Expense'}</span>
+            <span className="material-symbols-outlined text-[20px]">{isSaving ? 'hourglass_top' : 'check_circle'}</span>
+            <span>
+              {isSaving ? 'Saving...' : editingExpenseId ? 'Update Expense' : 'Save Expense'}
+            </span>
           </button>
         </section>
       )}

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
@@ -8,6 +8,25 @@ export const metadata: Metadata = {
   title: 'kanakkuX – Modern Financial Ledger & Tracker',
   description:
     'Track your expenses, income, and peer-to-peer lending with real-time cloud synchronization.',
+  applicationName: 'kanakkuX',
+  appleWebApp: {
+    capable: true,
+    title: 'kanakkuX',
+    statusBarStyle: 'default',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    apple: '/logos/logo mark.png',
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#faf8ff',
 };
 
 export default function RootLayout({
