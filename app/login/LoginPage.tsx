@@ -21,13 +21,38 @@ export default function LoginPage() {
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
+    // If a session already exists, redirect immediately to dashboard
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        window.location.href = '/dashboard';
+      }
+    });
+
+    // Listen for OAuth sign-in completion
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+        window.location.href = '/dashboard';
+      }
+    });
+
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('error')) {
-        setErrorMsg('Authentication failed or was cancelled. Please try again.');
+      const err = params.get('error') || params.get('error_description');
+      if (err) {
+        if (err === 'auth_callback_failed' || err === 'no_code_received') {
+          setErrorMsg('Authentication could not be completed. Please try again.');
+        } else if (err === 'access_denied') {
+          setErrorMsg('Google login was cancelled.');
+        } else {
+          setErrorMsg(decodeURIComponent(err));
+        }
       }
     }
-  }, []);
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const passwordStrength = useMemo(() => {
     if (!password) return { level: 0, text: '', color: 'bg-surface-container-high' };
@@ -64,11 +89,14 @@ export default function LoginPage() {
     setSuccessMsg('');
     setGoogleLoading(true);
     try {
-      const origin = window.location.origin;
+      let origin = window.location.origin;
+      if (origin.includes('0.0.0.0')) {
+        origin = origin.replace('0.0.0.0', 'localhost');
+      }
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${origin}/auth/callback?next=/dashboard`,
+          redirectTo: `${origin}/auth/callback`,
           queryParams: { access_type: 'offline', prompt: 'consent' },
         },
       });

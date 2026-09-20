@@ -53,15 +53,29 @@ export async function middleware(request: NextRequest) {
 
   if (!user && isProtectedRoute) {
     const loginUrl = request.nextUrl.clone();
+    if (loginUrl.hostname === '0.0.0.0') {
+      loginUrl.hostname = 'localhost';
+    }
     loginUrl.pathname = '/login';
-    return NextResponse.redirect(loginUrl);
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    supabaseResponse.cookies.getAll().forEach((c) => {
+      redirectResponse.cookies.set(c.name, c.value, c);
+    });
+    return redirectResponse;
   }
 
   // If authenticated and visiting /login → redirect to /dashboard
   if (user && pathname === '/login') {
     const dashboardUrl = request.nextUrl.clone();
+    if (dashboardUrl.hostname === '0.0.0.0') {
+      dashboardUrl.hostname = 'localhost';
+    }
     dashboardUrl.pathname = '/dashboard';
-    return NextResponse.redirect(dashboardUrl);
+    const redirectResponse = NextResponse.redirect(dashboardUrl);
+    supabaseResponse.cookies.getAll().forEach((c) => {
+      redirectResponse.cookies.set(c.name, c.value, c);
+    });
+    return redirectResponse;
   }
 
   return supabaseResponse;
